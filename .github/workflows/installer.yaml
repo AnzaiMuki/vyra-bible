@@ -1,0 +1,36 @@
+name: Windows installer
+run-name: Windows installer (${{ github.ref_name }})
+
+# Builds the plugin and the setup .exe on a GitHub Windows runner, so that no local
+# Visual Studio is needed. Start it from the "Actions" tab (Run workflow), or push a tag "v*".
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: Build setup .exe
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build plugin and setup
+        shell: pwsh
+        run: ./scripts/build-installer.ps1
+
+      - name: Upload setup
+        uses: actions/upload-artifact@v4
+        with:
+          name: VYRA-Bible-Setup
+          path: release/VYRA-Bible-Setup-*.exe
+          if-no-files-found: error
