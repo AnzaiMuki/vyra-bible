@@ -10,6 +10,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 // VYRA_LSG_PATH (defined by tests/CMakeLists.txt) points to data/bibles/lsg1910.tsv.
 
 #include "src/bible/bible_module.hpp"
+#include "tests/check.hpp"
 
 #include <chrono>
 #include <cstdio>
@@ -19,18 +20,6 @@ SPDX-License-Identifier: GPL-2.0-or-later
 using namespace vyra::bible;
 
 namespace {
-
-int g_failures = 0;
-int g_checks = 0;
-
-#define CHECK(cond)                                                                   \
-	do {                                                                          \
-		++g_checks;                                                           \
-		if (!(cond)) {                                                        \
-			++g_failures;                                                 \
-			std::printf("FAIL %s:%d  %s\n", __FILE__, __LINE__, #cond);   \
-		}                                                                     \
-	} while (0)
 
 const char *kHeader = "#vyra-module\t1\n#code\tTST\n#name\tTest\n#language\tfr\n#license\tPD\n#source\ttest\n";
 
@@ -140,9 +129,9 @@ void testRejections()
 	for (const auto &c : cases) {
 		BibleModule m;
 		const auto r = loadText(m, c.text);
-		++g_checks;
+		++vyra::testing::checks();
 		if (r.error != c.expected || (c.line != 0 && r.line != c.line)) {
-			++g_failures;
+			++vyra::testing::failures();
 			std::printf("FAIL rejection '%s': error=%d line=%d (expected error=%d line=%d) detail=%s\n",
 				    c.name, static_cast<int>(r.error), r.line, static_cast<int>(c.expected), c.line,
 				    r.detail.c_str());
@@ -181,7 +170,7 @@ void testRealSegond()
 	const auto ms =
 		std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
 	if (!r.ok()) {
-		++g_failures;
+		++vyra::testing::failures();
 		std::printf("FAIL cannot load %s: error=%d line=%d %s\n", VYRA_LSG_PATH, static_cast<int>(r.error),
 			    r.line, r.detail.c_str());
 		return;
@@ -264,6 +253,5 @@ int main()
 	testMissingFile();
 	testRealSegond();
 
-	std::printf("%d checks, %d failure(s)\n", g_checks, g_failures);
-	return g_failures == 0 ? 0 : 1;
+	return vyra::testing::finish();
 }

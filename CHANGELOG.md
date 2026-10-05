@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0] - 2026-10-05 - Milestone 03 : moteur de recherche
+
+### Ajouté
+- Moteur de recherche d'un passage (`src/search/`), sans dépendance à OBS ni Qt : « Jn 3 16 », « 1 Co 13.4-7 », « Jean 3:16-4:2 », chapitre entier, livres d'un seul chapitre, accents, noms français et anglais, abréviations de la Segond, préfixes uniques. Détail dans `docs/SEARCH.md`.
+- Réponses précises : passage valide, frappe en cours, livre ambigu (avec candidats), numéro hors limites (avec le maximum), plage inversée.
+- `passageVerses`, `formatPassage`, `suggestBooks` (versets d'un passage, forme imprimée, complétion).
+- Tests (`tests/search_test.cpp`, 1 712 vérifications), extraction des renvois de la Segond (`scripts/extract_crossrefs.py`) et son contrôle dans le workflow « Tests ».
+
+### Vérifié
+- Aller-retour sur toute la Bible : les 31 170 versets et 1 189 chapitres, imprimés puis relus, redonnent le même passage.
+- 18 927 renvois réels de la Segond : 1 152 couples abréviation-chapitre, 61 abréviations, tous résolus sauf 45 couples qui sont des coquilles des notes de la source (jamais un livre inconnu).
+- 200 000 requêtes aléatoires sans plantage ni erreur mémoire (ASan/UBSan). Environ 0,4 microseconde par requête en Release.
+- Un alias volontairement faux est bien détecté par les tests.
+- Compilation sans avertissement (`-Wall -Wextra -Wpedantic -Werror`).
+
+### Non vérifié
+- Le build MSVC sous Windows des nouveaux fichiers (le modèle active `/utf-8`, nécessaire aux noms accentués du catalogue), et tout ce qui touche OBS. Les workflows GitHub n'ont pas encore été observés.
+- Les 36 couples de renvois non résolus que je n'ai pas examinés un par un dans la source (9 l'ont été, voir `docs/SEARCH.md`) : leur profil est celui de coquilles, ce n'est pas une certitude.
+- Le moteur n'est pas encore relié au dock : la barre de recherche reste désactivée jusqu'au Milestone 04.
+
 ## [0.2.0] - 2026-10-05 - Milestone 02 : chargement d'une Bible
 
 ### Ajouté

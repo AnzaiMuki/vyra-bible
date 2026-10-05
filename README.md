@@ -2,7 +2,7 @@
 
 Plugin OBS Studio gratuit, édité par **VYRA Concept**, pour afficher la Bible en direct avec une logique de régie : recherche d'un passage, **Preview**, puis **ON AIR**, sans jamais couper l'affichage.
 
-> **État : Milestone 02 sur 14.** Le dock s'affiche et charge la Louis Segond 1910 (31 170 versets), mais **la recherche, la Preview et l'envoi à l'antenne n'existent pas encore** : les boutons restent désactivés. Voir [CHANGELOG.md](CHANGELOG.md).
+> **État : Milestone 03 sur 14.** Le dock charge la Louis Segond 1910 et le moteur de recherche comprend « Jn 3 16 », « 1 Co 13.4-7 », etc. (testé), mais **il n'est pas encore relié au dock** : la barre de recherche, la Preview et ON AIR restent désactivées. Voir [CHANGELOG.md](CHANGELOG.md).
 
 ## Architecture visée
 

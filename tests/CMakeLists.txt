@@ -28,3 +28,26 @@ else()
 endif()
 
 add_test(NAME bible_module COMMAND bible_module_test)
+
+add_executable(
+  search_test
+  search_test.cpp
+  "${VYRA_ROOT}/src/bible/bible_module.cpp"
+  "${VYRA_ROOT}/src/search/book_catalog.cpp"
+  "${VYRA_ROOT}/src/search/passage_query.cpp"
+)
+target_include_directories(search_test PRIVATE "${VYRA_ROOT}")
+target_compile_definitions(
+  search_test
+  PRIVATE
+    VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv"
+    VYRA_CROSSREFS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data/segond_crossrefs.tsv"
+    VYRA_ANOMALIES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data/segond_crossref_anomalies.tsv"
+)
+if(MSVC)
+  target_compile_options(search_test PRIVATE /W4 /utf-8)
+else()
+  target_compile_options(search_test PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_test(NAME search COMMAND search_test)

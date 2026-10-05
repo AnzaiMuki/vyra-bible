@@ -42,6 +42,10 @@ target_sources(
     src/bible/bible_module.cpp
     src/bible/bible_module.hpp
     src/plugin/plugin_main.cpp
+    src/search/book_catalog.cpp
+    src/search/book_catalog.hpp
+    src/search/passage_query.cpp
+    src/search/passage_query.hpp
     ui/stage_panel.cpp
     ui/stage_panel.hpp
     ui/vyra_dock.cpp

@@ -45,3 +45,8 @@ jobs:
 
       - name: No verse text lost or invented
         run: python3 scripts/audit_usfm_conversion.py source-usfm/p.sfm data/bibles/lsg1910.tsv
+
+      - name: Regenerate the cross reference test data and compare it with the committed one
+        run: |
+          python3 scripts/extract_crossrefs.py source-usfm/p.sfm regenerated_crossrefs.tsv
+          cmp regenerated_crossrefs.tsv tests/data/segond_crossrefs.tsv

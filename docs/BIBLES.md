@@ -38,7 +38,7 @@ Texte UTF-8, un enregistrement par ligne :
 
 ## Versification de la Segond
 
-Le module compte **31 170 versets**, plus que les 31 102 habituels : la Segond numérote certains titres de psaumes comme des versets. Exemple : Psaume 23:1 = « Cantique de David. L'Éternel est mon berger : je ne manquerai de rien. » (titre et premier vers dans un seul verset). Le Psaume 51 compte ainsi 21 versets (19 dans la KJV). 3 Jean compte 15 versets (14 dans la KJV). La recherche par référence (Milestone 03) suivra cette numérotation, pas celle de la KJV.
+Le module compte **31 170 versets**, plus que les 31 102 habituels : la Segond numérote certains titres de psaumes comme des versets. Exemple : Psaume 23:1 = « Cantique de David. L'Éternel est mon berger : je ne manquerai de rien. » (titre et premier vers dans un seul verset). Le Psaume 51 compte ainsi 21 versets (19 dans la KJV). 3 Jean compte 15 versets (14 dans la KJV). La recherche par référence (voir `SEARCH.md`) suit cette numérotation, pas celle de la KJV.
 
 ## Fabriquer ou régénérer un module
 

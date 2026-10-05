@@ -31,13 +31,15 @@ Résultat : `release\VYRA-Bible-Setup-<version>.exe`.
 | `src/plugin/plugin_main.cpp` | Point d'entrée OBS : enregistre et retire le dock |
 | `src/plugin-support.*` | Journalisation `obs_log` (convention du modèle OBS, laissée à la racine de `src/`) |
 | `src/bible/bible_module.*` | Chargement d'une Bible (module VYRA), sans dépendance à OBS ni Qt |
+| `src/search/book_catalog.*` | Les 66 livres : noms, abréviations, normalisation des accents |
+| `src/search/passage_query.*` | Comprendre « Jn 3 16 » et le vérifier contre la Bible chargée |
 | `ui/vyra_dock.*` | Dock opérateur (disposition de régie) |
 | `ui/stage_panel.*` | Écran 16:9 PREVIEW / PROGRAM |
 | `data/locale/` | Textes fr-FR et en-US |
 | `data/bibles/` | Bibles embarquées (installées avec le plugin) |
-| `tests/` | Tests unitaires du code indépendant d'OBS |
+| `tests/` | Tests du code indépendant d'OBS (`bible_module_test`, `search_test`) et leurs données |
 | `installer/` | Script Inno Setup |
-| `scripts/` | Build du setup, conversion et audit des Bibles |
+| `scripts/` | Build du setup, conversion et audit des Bibles, extraction des renvois de test |
 
 Les dossiers `bible/`, `search/`, `database/`, `presentation/`, `server/`, `obs/`, `themes/`, `settings/`, `overlay/` de la spécification seront créés quand un milestone en aura besoin, pas avant.
 
@@ -58,7 +60,7 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 ## Checklist de test (sur Windows, jusqu'au Milestone 02)
 
 1. Le build se termine sans erreur.
-2. OBS démarre ; le journal contient `[vyra-bible] loading (version 0.2.0)` puis `dock registered`.
+2. OBS démarre ; le journal contient `[vyra-bible] loading (version 0.3.0)` puis `dock registered`.
 3. Menu Docks > VYRA Bible : le dock s'affiche avec Preview et Program en 16:9.
 4. Redimensionner le dock : les écrans gardent leur ratio.
 5. Le journal contient `Bible loaded: Louis Segond 1910 (LSG1910), 31170 verses` et le bas du dock affiche « Louis Segond 1910 chargée (31170 versets) ».
