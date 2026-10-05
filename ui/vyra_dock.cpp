@@ -13,6 +13,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QStyle>
 #include <QVBoxLayout>
 
 #include "ui/stage_panel.hpp"
@@ -48,6 +49,9 @@ constexpr const char *kStyleSheet = R"(
 	color: #8b95a1;
 	font-size: 11px;
 }
+#dockStatus[error="true"] {
+	color: #f04438;
+}
 )";
 
 QString text(const char *key)
@@ -56,6 +60,15 @@ QString text(const char *key)
 }
 
 } // namespace
+
+void VyraDock::setStatus(const QString &text, bool isError)
+{
+	statusLabel_->setText(text);
+	statusLabel_->setProperty("error", isError);
+	// A changed dynamic property is not picked up by the style sheet until the widget is re-polished.
+	statusLabel_->style()->unpolish(statusLabel_);
+	statusLabel_->style()->polish(statusLabel_);
+}
 
 VyraDock::VyraDock(QWidget *parent) : QWidget(parent)
 {
@@ -108,7 +121,7 @@ VyraDock::VyraDock(QWidget *parent) : QWidget(parent)
 
 	root->addStretch(1);
 
-	statusLabel_ = new QLabel(text("Status.Skeleton"), this);
+	statusLabel_ = new QLabel(this);
 	statusLabel_->setObjectName(QStringLiteral("dockStatus"));
 	statusLabel_->setWordWrap(true);
 	root->addWidget(statusLabel_);

@@ -33,6 +33,9 @@ class VyraDock : public QWidget {
 public:
 	explicit VyraDock(QWidget *parent = nullptr);
 
+	/** Sets the status line at the bottom of the dock. @p isError shows it in red. */
+	void setStatus(const QString &text, bool isError);
+
 private:
 	QLineEdit *searchEdit_ = nullptr;
 	StagePanel *preview_ = nullptr;

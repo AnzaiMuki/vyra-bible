@@ -1,0 +1,3 @@
+# The Bible modules are read byte for byte by the plugin: never convert their line endings.
+data/bibles/*.tsv text eol=lf
+*.sh text eol=lf

@@ -39,6 +39,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE
 target_sources(
   ${CMAKE_PROJECT_NAME}
   PRIVATE
+    src/bible/bible_module.cpp
+    src/bible/bible_module.hpp
     src/plugin/plugin_main.cpp
     ui/stage_panel.cpp
     ui/stage_panel.hpp

@@ -26,8 +26,13 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <obs-frontend-api.h>
 #include <plugin-support.h>
 
+#include <QString>
 #include <QWidget>
 
+#include <filesystem>
+#include <memory>
+
+#include "src/bible/bible_module.hpp"
 #include "ui/vyra_dock.hpp"
 
 OBS_DECLARE_MODULE()
@@ -38,6 +43,59 @@ namespace {
 constexpr const char *kDockId = "vyra-bible-dock";
 
 bool g_dockRegistered = false;
+
+// The Bible shown by the plugin. Later milestones hand it to the search engine.
+std::unique_ptr<vyra::bible::BibleModule> g_bible;
+
+QString text(const char *key)
+{
+	return QString::fromUtf8(obs_module_text(key));
+}
+
+/**
+ * Loads the bundled Segond 1910 and returns the line to show in the dock.
+ * Never throws and never stops OBS: a missing or corrupt Bible only disables the plugin's content.
+ */
+QString loadBundledBible(bool &ok)
+{
+	using vyra::bible::LoadError;
+
+	g_bible = std::make_unique<vyra::bible::BibleModule>();
+
+	char *rawPath = obs_module_file("bibles/lsg1910.tsv");
+	if (!rawPath) {
+		obs_log(LOG_ERROR, "Bible file 'bibles/lsg1910.tsv' not found in the plugin data folder");
+		g_bible.reset();
+		ok = false;
+		return text("Error.BibleMissing");
+	}
+	const std::filesystem::path path = std::filesystem::u8path(rawPath); // UTF-8 path, also on Windows
+	bfree(rawPath);
+
+	const vyra::bible::LoadResult result = g_bible->loadFromFile(path);
+	if (!result.ok()) {
+		obs_log(LOG_ERROR, "cannot load the Bible '%s': error %d, line %d, %s", path.u8string().c_str(),
+			static_cast<int>(result.error), result.line, result.detail.c_str());
+		g_bible.reset();
+		ok = false;
+		switch (result.error) {
+		case LoadError::FileNotFound:
+			return text("Error.BibleMissing");
+		case LoadError::BadEncoding:
+			return text("Error.BibleEncoding");
+		default:
+			return text("Error.BibleInvalid");
+		}
+	}
+
+	const auto &info = g_bible->info();
+	obs_log(LOG_INFO, "Bible loaded: %s (%s), %zu verses", info.name.c_str(), info.code.c_str(),
+		g_bible->verseCount());
+	ok = true;
+	return text("Status.BibleLoaded")
+		.arg(QString::fromStdString(info.name))
+		.arg(static_cast<qulonglong>(g_bible->verseCount()));
+}
 
 } // namespace
 
@@ -51,7 +109,11 @@ bool obs_module_load(void)
 		return false;
 	}
 
+	bool bibleOk = false;
+	const QString bibleStatus = loadBundledBible(bibleOk);
+
 	auto *dock = new vyra::ui::VyraDock(mainWindow);
+	dock->setStatus(bibleStatus, !bibleOk);
 
 	// On success OBS takes ownership of the widget (it is wrapped in a QDockWidget).
 	if (!obs_frontend_add_dock_by_id(kDockId, obs_module_text("Dock.Title"), dock)) {
@@ -71,5 +133,6 @@ void obs_module_unload(void)
 		obs_frontend_remove_dock(kDockId);
 		g_dockRegistered = false;
 	}
+	g_bible.reset();
 	obs_log(LOG_INFO, "unloaded");
 }

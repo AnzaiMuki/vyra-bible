@@ -1,0 +1,47 @@
+name: Tests
+run-name: Tests (${{ github.ref_name }})
+
+# Tests of the code that does not depend on OBS (Bible loader) and audit of the Bible conversion.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit tests (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure and build
+        run: |
+          cmake -S tests -B build_tests -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_tests
+
+      - name: Run tests
+        run: ctest --test-dir build_tests --output-on-failure
+
+  bible-audit:
+    name: Audit of the Segond 1910 conversion
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch the USFM source
+        run: git clone --depth 1 https://github.com/BibleCorps/FRA-B-LSG1910-PD-UBS source-usfm
+
+      - name: Regenerate the module and compare it with the committed one
+        run: |
+          python3 scripts/usfm_to_vyra_tsv.py source-usfm/p.sfm regenerated.tsv \
+            --code LSG1910 --name "Louis Segond 1910" --language fr --license "Public Domain" \
+            --source "BibleCorps FRA-B-LSG1910-PD-UBS (github.com/BibleCorps/FRA-B-LSG1910-PD-UBS), text of the Segond 1910 edition"
+          cmp regenerated.tsv data/bibles/lsg1910.tsv
+
+      - name: No verse text lost or invented
+        run: python3 scripts/audit_usfm_conversion.py source-usfm/p.sfm data/bibles/lsg1910.tsv

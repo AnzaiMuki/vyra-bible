@@ -2,7 +2,7 @@
 
 Plugin OBS Studio gratuit, édité par **VYRA Concept**, pour afficher la Bible en direct avec une logique de régie : recherche d'un passage, **Preview**, puis **ON AIR**, sans jamais couper l'affichage.
 
-> **État : Milestone 01 sur 14.** Le projet compile et le dock s'affiche, mais **aucune fonction biblique n'existe encore** : pas de texte, pas de recherche, pas d'envoi à l'antenne. Les boutons du dock sont volontairement désactivés. Voir [CHANGELOG.md](CHANGELOG.md).
+> **État : Milestone 02 sur 14.** Le dock s'affiche et charge la Louis Segond 1910 (31 170 versets), mais **la recherche, la Preview et l'envoi à l'antenne n'existent pas encore** : les boutons restent désactivés. Voir [CHANGELOG.md](CHANGELOG.md).
 
 ## Architecture visée
 
@@ -18,4 +18,4 @@ Voir [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Licence
 
-GPL-2.0-or-later (obligatoire : le plugin se lie à OBS Studio, lui-même sous GPL). Les textes bibliques ont leurs propres licences : aucune traduction protégée n'est distribuée avec le plugin.
+GPL-2.0-or-later (obligatoire : le plugin se lie à OBS Studio, lui-même sous GPL). Les textes bibliques ont leurs propres licences (voir [docs/BIBLES.md](docs/BIBLES.md)) : aucune traduction protégée n'est distribuée avec le plugin.
