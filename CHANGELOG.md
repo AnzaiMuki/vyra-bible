@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0] - 2026-10-06 - Milestone 04 : interface opérateur
+
+### Ajouté
+- La barre de recherche du dock est active. Pendant la frappe, la ligne d'état dit où en est la référence : en cours (gris), prête avec le nombre de versets, ou erreur en rouge (livre inconnu, livre ambigu avec les candidats, chapitre ou verset hors limites avec le maximum, plage inversée, liste `;` non gérée).
+- Raccourcis, barre de recherche active : Entrée = Preview ; Ctrl+Entrée = ON AIR (le passage tapé, ou le Preview si la barre est vide) ; Haut/Bas = verset précédent/suivant dans le Preview ; Échap = retirer le Program de l'antenne (le passage reste prêt).
+- Boutons Précédent, Suivant, Masquer, ON AIR, activés seulement quand ils ont un sens. Ils ne prennent pas le focus, pour ne pas casser le flux clavier.
+- `src/stage/stage_controller` (sans Qt ni OBS) : toutes les règles Preview/Program. Seul `takeOnAir()` modifie le Program ; taper, Précédent et Suivant ne touchent jamais le direct. Précédent/Suivant passent les frontières de chapitre et de livre, et sautent les livres absents d'une Bible.
+- Si une référence tapée est invalide, Ctrl+Entrée n'envoie rien à l'antenne.
+- Écrans Preview/Program : le texte du passage s'affiche en brut ; le cadre du Program devient rouge quand il est en direct.
+
+### Vérifié
+- `tests/stage_test.cpp` (règles Preview/Program, y compris une marche de bout en bout sur les 31 170 versets dans les deux sens, une Bible à livres manquants, des passages refusés) : passe sous ASan/UBSan.
+- `tests/dock_ui_test.cpp` : le vrai dock, plateforme Qt « offscreen », avec de vraies touches simulées (Entrée, Ctrl+Entrée, Haut, Bas, Échap) et des clics : 36 vérifications. Un contrôle négatif (Ctrl inversé dans le code) fait bien échouer 5 d'entre elles.
+- Compilation sans avertissement du dock avec Qt 6 sous Linux.
+
+### Non vérifié
+- Tout ce qui touche OBS et Windows : le dock n'a jamais été lancé dans OBS ; le build MSVC n'a pas été essayé ; les workflows GitHub n'ont pas été observés. Le comportement du focus clavier à l'intérieur d'un dock OBS (qui peut avoir ses propres raccourcis) n'est donc pas confirmé.
+- Les raccourcis ne fonctionnent que quand la barre de recherche a le focus ; les raccourcis globaux OBS arrivent au Milestone 08.
+- Le texte long (psaume 119) est coupé dans l'écran du dock : le rendu réel est le Milestone 05. Rien n'est encore envoyé à OBS : ON AIR ne change que l'état du dock.
+- Les textes de l'interface sont écrits en français ; la version anglaise est écrite aussi mais n'a pas été relue en situation.
+
 ## [0.3.0] - 2026-10-05 - Milestone 03 : moteur de recherche
 
 ### Ajouté

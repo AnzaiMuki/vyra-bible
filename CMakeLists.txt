@@ -46,6 +46,8 @@ target_sources(
     src/search/book_catalog.hpp
     src/search/passage_query.cpp
     src/search/passage_query.hpp
+    src/stage/stage_controller.cpp
+    src/stage/stage_controller.hpp
     ui/stage_panel.cpp
     ui/stage_panel.hpp
     ui/vyra_dock.cpp

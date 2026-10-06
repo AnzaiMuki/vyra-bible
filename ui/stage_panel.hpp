@@ -15,7 +15,8 @@ namespace vyra::ui {
 
 /**
  * A 16:9 black screen. It keeps its aspect ratio whatever the width of the dock.
- * Milestone 01: shows a caption only. The real rendering arrives with Milestone 05.
+ * Milestone 04: shows a caption while empty, or a passage as plain text. The real rendering
+ * (themes, same picture as the one sent to OBS) arrives with Milestone 05.
  */
 class AspectFrame : public QFrame {
 	Q_OBJECT
@@ -25,12 +26,18 @@ public:
 
 	int heightForWidth(int width) const override;
 
+	/** Shows @p html (already escaped, Qt rich text) instead of the caption. */
+	void setContent(const QString &html);
+	/** Shows @p caption again, in place of any content. */
+	void setCaption(const QString &caption);
+
 protected:
 	void resizeEvent(QResizeEvent *event) override;
 
 private:
 	// No layout on purpose: a child layout would hide our height-for-width from the parent layout.
 	QLabel *captionLabel_ = nullptr;
+	QLabel *contentLabel_ = nullptr;
 };
 
 /**
@@ -47,6 +54,11 @@ public:
 	 * @param screenName   Qt object name of the screen, used by the style sheet.
 	 */
 	StagePanel(const QString &title, const QString &caption, const QString &screenName, QWidget *parent = nullptr);
+
+	void setContent(const QString &html) { screen_->setContent(html); }
+	void setCaption(const QString &caption) { screen_->setCaption(caption); }
+	/** Marks the screen as live (red frame, see the dock style sheet). */
+	void setLive(bool live);
 
 private:
 	QLabel *titleLabel_ = nullptr;

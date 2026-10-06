@@ -112,7 +112,7 @@ bool obs_module_load(void)
 	bool bibleOk = false;
 	const QString bibleStatus = loadBundledBible(bibleOk);
 
-	auto *dock = new vyra::ui::VyraDock(mainWindow);
+	auto *dock = new vyra::ui::VyraDock(g_bible.get(), mainWindow);
 	dock->setStatus(bibleStatus, !bibleOk);
 
 	// On success OBS takes ownership of the widget (it is wrapped in a QDockWidget).

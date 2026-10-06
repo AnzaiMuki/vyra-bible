@@ -8,6 +8,17 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QWidget>
 
+#include <memory>
+
+#include "src/search/passage_query.hpp"
+
+namespace vyra::bible {
+class BibleModule;
+}
+namespace vyra::stage {
+class StageController;
+}
+
 class QLineEdit;
 class QPushButton;
 class QLabel;
@@ -24,19 +35,46 @@ class StagePanel;
  *   [ Previous | Next | Hide |  ON AIR   ]
  *   [ status line                        ]
  *
- * Milestone 01: layout only. Every control is disabled on purpose, so that an
- * operator never believes a button works when it does not yet.
+ * Milestone 04: the search bar is live. It only translates what the operator does into calls to
+ * StageController (which holds all the rules) and displays the result.
+ *
+ * Keys, while the search bar has the focus:
+ *   Enter        passage typed -> PREVIEW
+ *   Ctrl+Enter   passage typed (or the one in PREVIEW if the bar is empty) -> PROGRAM, ON AIR
+ *   Up / Down    previous / next verse, in PREVIEW only
+ *   Esc          takes the PROGRAM off the air (the passage stays ready)
  */
 class VyraDock : public QWidget {
 	Q_OBJECT
 
 public:
-	explicit VyraDock(QWidget *parent = nullptr);
+	/**
+	 * @param bible  The Bible to read from; must outlive the dock. May be null (failed to load):
+	 *               every control then stays disabled.
+	 */
+	explicit VyraDock(const bible::BibleModule *bible, QWidget *parent = nullptr);
+	~VyraDock() override;
 
 	/** Sets the status line at the bottom of the dock. @p isError shows it in red. */
 	void setStatus(const QString &text, bool isError);
 
+protected:
+	bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
+	void onQueryChanged();
+	void previewFromField();
+	void airFromField();
+	void navigate(bool forward);
+	void hideProgram();
+	void refresh();
+	void setFieldToPreview();
+
+	const bible::BibleModule *bible_ = nullptr;
+	std::unique_ptr<stage::StageController> stage_;
+	search::QueryResult query_;
+	bool syncingField_ = false;
+
 	QLineEdit *searchEdit_ = nullptr;
 	StagePanel *preview_ = nullptr;
 	StagePanel *program_ = nullptr;
