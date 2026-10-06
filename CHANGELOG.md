@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.0] - 2026-10-07 - Milestone 05 : overlay pour OBS
+
+### Ajouté
+- Une page overlay transparente (`data/overlay/`) : lower third, fondu entre versets sans passer par le vide, texte réduit pour tenir dans le cadre, réajustement si OBS redimensionne la source. Détail dans `docs/OVERLAY.md`.
+- Un serveur local (`src/overlay/`), 127.0.0.1 uniquement, GET uniquement, trois fichiers fixes plus `/state` et `/events` (Server-Sent Events) ; port 17420, ou le premier libre jusqu'à 17429. Une page qui se connecte reçoit l'état courant tout de suite.
+- Le dock publie le Program à chaque ON AIR / Masquer (et seulement alors : taper, Préc. et Suiv. ne touchent jamais l'overlay). Le bas du dock affiche l'adresse à coller dans la source Navigateur d'OBS.
+- Le texte de la Bible est toujours inséré comme du texte (jamais du HTML) et échappé dans le JSON.
+
+### Vérifié
+- `tests/overlay_test.cpp` (2 439 vérifications) : les 31 170 versets passent par le JSON et reviennent identiques (lecteur JSON écrit séparément) ; caractères spéciaux, U+2028/2029 ; routes HTTP, 20 000 requêtes aléatoires ; ASan/UBSan.
+- `tests/overlay_server_test.cpp` (55 vérifications, vrais sockets) : fichiers servis octet pour octet, 404/405/400/431, requête découpée, client trop lent coupé, port suivant libre, refus de l'écoute hors boucle locale, 500 publications dans l'ordre, clients qui partent, limite de connexions. Trois altérations volontaires du code (écoute sur toutes les interfaces, publication supprimée, limite supprimée) sont bien détectées.
+- `tests/overlay_page_test.py` (38 vérifications, vrai Chromium, captures à fond transparent) : fond transparent, fondu sans vide, ancienne image ignorée, balises HTML affichées en texte, texte qui tient en 1280x720, 3840x2160 et portrait, redimensionnement pendant l'antenne (un test a réellement échoué avant que j'ajoute ce réajustement ; retiré, il échoue de nouveau).
+- `tests/overlay_e2e_test.py` (18 vérifications) : Chromium contre le vrai serveur et les vraies règles Preview/Program : le Preview ne sort jamais, ON AIR si, Masquer vide, une page ouverte en retard est à jour.
+- Les sources du plugin (dont `plugin_main.cpp`) compilent sans avertissement contre les vrais en-têtes d'OBS.
+
+### Non vérifié
+- Tout ce qui touche OBS et Windows : la source Navigateur d'OBS (son moteur CEF diffère de Chromium), le fond transparent dans OBS, le NDI, le build MSVC, les workflows GitHub (le workflow « Tests » installe maintenant Playwright : jamais observé).
+- Qt6 Network dans le Qt fourni par le modèle OBS : OBS l'utilise lui-même, donc très probable, mais non essayé.
+- Un seul thème (lower third) ; pas de pagination des longs passages (les derniers versets sont retirés avec « … ») ; l'écran Preview du dock reste en texte brut (pas identique à l'overlay).
+- La police est celle du système (Segoe UI sous Windows) ; non vue sous Windows.
+
 ## [0.4.0] - 2026-10-06 - Milestone 04 : interface opérateur
 
 ### Ajouté

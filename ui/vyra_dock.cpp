@@ -214,6 +214,18 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 
 VyraDock::~VyraDock() = default;
 
+void VyraDock::setProgramListener(ProgramListener listener)
+{
+	programListener_ = std::move(listener);
+	notifyProgram();
+}
+
+void VyraDock::notifyProgram()
+{
+	if (programListener_ && stage_)
+		programListener_(*stage_);
+}
+
 void VyraDock::onQueryChanged()
 {
 	if (syncingField_ || !bible_)
@@ -248,6 +260,7 @@ void VyraDock::airFromField()
 		setStatus(text("Status.OnAir").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
 		setFieldToPreview();
 		refresh();
+		notifyProgram();
 	}
 }
 
@@ -267,6 +280,7 @@ void VyraDock::hideProgram()
 	if (stage_ && stage_->hideProgram()) {
 		setStatus(text("Status.Hidden").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
 		refresh();
+		notifyProgram();
 	}
 }
 

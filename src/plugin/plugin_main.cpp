@@ -26,6 +26,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <obs-frontend-api.h>
 #include <plugin-support.h>
 
+#include <QPointer>
 #include <QString>
 #include <QWidget>
 
@@ -33,6 +34,8 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <memory>
 
 #include "src/bible/bible_module.hpp"
+#include "src/overlay/overlay_frame.hpp"
+#include "src/overlay/overlay_server.hpp"
 #include "ui/vyra_dock.hpp"
 
 OBS_DECLARE_MODULE()
@@ -46,6 +49,13 @@ bool g_dockRegistered = false;
 
 // The Bible shown by the plugin. Later milestones hand it to the search engine.
 std::unique_ptr<vyra::bible::BibleModule> g_bible;
+
+// The local web server behind the Browser Source. Owned here; the dock only holds a QPointer-guarded callback.
+std::unique_ptr<vyra::overlay::OverlayServer> g_overlay;
+unsigned long long g_overlayRevision = 0;
+
+constexpr quint16 kOverlayFirstPort = 17420;
+constexpr quint16 kOverlayLastPort = 17429;
 
 QString text(const char *key)
 {
@@ -97,6 +107,36 @@ QString loadBundledBible(bool &ok)
 		.arg(static_cast<qulonglong>(g_bible->verseCount()));
 }
 
+/**
+ * Starts the overlay server. Returns the line to show in the dock.
+ * Never throws and never stops OBS: without a server the dock still works, it just cannot feed OBS.
+ */
+QString startOverlay(bool &ok)
+{
+	char *rawDir = obs_module_file("overlay");
+	if (!rawDir) {
+		obs_log(LOG_ERROR, "overlay folder not found in the plugin data folder");
+		ok = false;
+		return text("Error.OverlayMissing");
+	}
+	const QString dir = QString::fromUtf8(rawDir);
+	bfree(rawDir);
+
+	g_overlay = std::make_unique<vyra::overlay::OverlayServer>(dir);
+	QString error;
+	if (!g_overlay->start(kOverlayFirstPort, kOverlayLastPort, &error)) {
+		obs_log(LOG_ERROR, "overlay server cannot listen on ports %d-%d: %s", kOverlayFirstPort,
+			kOverlayLastPort, error.toUtf8().constData());
+		g_overlay.reset();
+		ok = false;
+		return text("Error.OverlayPort").arg(kOverlayFirstPort).arg(kOverlayLastPort);
+	}
+	const QString url = QStringLiteral("http://127.0.0.1:%1/").arg(g_overlay->port());
+	obs_log(LOG_INFO, "overlay server listening on %s", url.toUtf8().constData());
+	ok = true;
+	return text("Status.OverlayRunning").arg(url);
+}
+
 } // namespace
 
 bool obs_module_load(void)
@@ -112,13 +152,25 @@ bool obs_module_load(void)
 	bool bibleOk = false;
 	const QString bibleStatus = loadBundledBible(bibleOk);
 
+	bool overlayOk = false;
+	const QString overlayStatus = startOverlay(overlayOk);
+
 	auto *dock = new vyra::ui::VyraDock(g_bible.get(), mainWindow);
-	dock->setStatus(bibleStatus, !bibleOk);
+	dock->setStatus(bibleStatus + QLatin1Char('\n') + overlayStatus, !bibleOk || !overlayOk);
+
+	if (g_overlay) {
+		QPointer<vyra::overlay::OverlayServer> server(g_overlay.get());
+		dock->setProgramListener([server](const vyra::stage::StageController &stage) {
+			if (server) // the server may be gone while OBS is still closing the dock
+				server->publish(vyra::overlay::makeFrame(stage, ++g_overlayRevision));
+		});
+	}
 
 	// On success OBS takes ownership of the widget (it is wrapped in a QDockWidget).
 	if (!obs_frontend_add_dock_by_id(kDockId, obs_module_text("Dock.Title"), dock)) {
 		obs_log(LOG_ERROR, "OBS refused to register the dock '%s'", kDockId);
 		delete dock;
+		g_overlay.reset();
 		return false;
 	}
 
@@ -133,6 +185,7 @@ void obs_module_unload(void)
 		obs_frontend_remove_dock(kDockId);
 		g_dockRegistered = false;
 	}
+	g_overlay.reset();
 	g_bible.reset();
 	obs_log(LOG_INFO, "unloaded");
 }

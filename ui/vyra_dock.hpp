@@ -8,6 +8,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QWidget>
 
+#include <functional>
 #include <memory>
 
 #include "src/search/passage_query.hpp"
@@ -55,6 +56,13 @@ public:
 	explicit VyraDock(const bible::BibleModule *bible, QWidget *parent = nullptr);
 	~VyraDock() override;
 
+	/**
+	 * Called each time what is on the PROGRAM changes (ON AIR, Hide), with the controller holding the new
+	 * state, and once at once when the listener is set. The dock knows nothing about who listens.
+	 */
+	using ProgramListener = std::function<void(const stage::StageController &)>;
+	void setProgramListener(ProgramListener listener);
+
 	/** Sets the status line at the bottom of the dock. @p isError shows it in red. */
 	void setStatus(const QString &text, bool isError);
 
@@ -69,11 +77,13 @@ private:
 	void hideProgram();
 	void refresh();
 	void setFieldToPreview();
+	void notifyProgram();
 
 	const bible::BibleModule *bible_ = nullptr;
 	std::unique_ptr<stage::StageController> stage_;
 	search::QueryResult query_;
 	bool syncingField_ = false;
+	ProgramListener programListener_;
 
 	QLineEdit *searchEdit_ = nullptr;
 	StagePanel *preview_ = nullptr;

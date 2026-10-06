@@ -20,6 +20,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <cstdio>
 #include <string>
 #include "src/bible/bible_module.hpp"
+#include "src/stage/stage_controller.hpp"
 #include "ui/vyra_dock.hpp"
 #include "tests/check.hpp"
 static QMap<std::string, std::string> g;
@@ -38,6 +39,10 @@ int main(int c,char**v){QApplication app(c,v);
   auto *edit=d.findChild<QLineEdit*>();
   CHECK(edit->isEnabled());
   CHECK(!btn(d,0)->isEnabled()&&!btn(d,1)->isEnabled()&&!btn(d,2)->isEnabled()&&!btn(d,3)->isEnabled());
+  // the program listener hears ON AIR and Hide, and nothing else
+  int heard=0; bool lastLive=false;
+  d.setProgramListener([&](const vyra::stage::StageController& c){ ++heard; lastLive=c.programLive(); });
+  CHECK(heard==1 && !lastLive);                      // told the initial state at once
   // typing feedback
   QTest::keyClicks(edit,"Jn"); CHECK(status(d).contains("chapitre")); 
   QTest::keyClicks(edit," 3:16"); CHECK(status(d).contains("Jean 3:16 (1 versets)")); 
@@ -46,13 +51,16 @@ int main(int c,char**v){QApplication app(c,v);
   CHECK(contents(d)[0]->isVisible()&&contents(d)[0]->text().contains("Jean 3:16"));
   CHECK(!contents(d)[1]->isVisible());               // nothing on program yet
   CHECK(btn(d,3)->isEnabled()&&btn(d,0)->isEnabled());
+  CHECK(heard==1);                                   // preview is not the program: nobody is told
   // Ctrl+Enter -> air
   QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
+  CHECK(heard==2 && lastLive);
   CHECK(status(d).startsWith("EN DIRECT : Jean 3:16"));
   CHECK(contents(d)[1]->isVisible()&&contents(d)[1]->text().contains("Jean 3:16"));
   CHECK(btn(d,2)->isEnabled());
   // Down: preview moves, program does not
   QTest::keyClick(edit,Qt::Key_Down);
+  CHECK(heard==2);                                   // moving the preview never tells the listener
   CHECK(edit->text()=="Jean 3:17"); CHECK(contents(d)[0]->text().contains("Jean 3:17")); CHECK(contents(d)[1]->text().contains("Jean 3:16"));
   QTest::keyClick(edit,Qt::Key_Up); QTest::keyClick(edit,Qt::Key_Up);
   CHECK(edit->text()=="Jean 3:15"); CHECK(contents(d)[1]->text().contains("Jean 3:16"));
@@ -65,12 +73,13 @@ int main(int c,char**v){QApplication app(c,v);
   edit->clear(); QTest::keyClicks(edit,"Ju 1"); CHECK(status(d).contains("ambigu")); 
   // Esc hides; program caption keeps the passage ready
   QTest::keyClick(edit,Qt::Key_Escape);
+  CHECK(heard==3 && !lastLive);
   CHECK(status(d).startsWith("Masqué : Jean 3:16")); CHECK(!contents(d)[1]->isVisible()); CHECK(!btn(d,2)->isEnabled());
   // Esc again: nothing live, nothing happens
-  QString s=status(d); QTest::keyClick(edit,Qt::Key_Escape); CHECK(status(d)==s);
+  QString s=status(d); QTest::keyClick(edit,Qt::Key_Escape); CHECK(status(d)==s); CHECK(heard==3);
   // Ctrl+Enter with the bar emptied airs the preview
   edit->clear(); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
-  CHECK(status(d).startsWith("EN DIRECT : Jean 3:15"));
+  CHECK(status(d).startsWith("EN DIRECT : Jean 3:15")); CHECK(heard==4 && lastLive);
   // buttons
   QTest::mouseClick(btn(d,2),Qt::LeftButton); CHECK(!contents(d)[1]->isVisible());
   QTest::mouseClick(btn(d,1),Qt::LeftButton); CHECK(contents(d)[0]->text().contains("Jean 3:16"));

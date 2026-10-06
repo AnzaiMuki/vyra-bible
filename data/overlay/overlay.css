@@ -1,0 +1,75 @@
+/* VYRA Bible overlay: lower third. Everything is sized from the viewport, so any Browser Source size works.
+   The background is fully transparent: only the panel is drawn. */
+html, body {
+	margin: 0;
+	height: 100%;
+	background: transparent;
+	overflow: hidden;
+	font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+#panel {
+	position: fixed;
+	left: 6vw;
+	right: 6vw;
+	bottom: 6vh;
+	box-sizing: border-box;
+	padding: 2.2vh 2.4vw 2.4vh calc(2.4vw + 0.7vw);
+	background: rgba(8, 10, 14, 0.86);
+	border-left: 0.7vw solid #d6a84a;
+	color: #ffffff;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+#panel.on {
+	opacity: 1;
+}
+
+#slides {
+	position: relative;
+	/* The room available for one slide. Fitting the text into it is done in overlay.js. */
+	height: 30vh;
+}
+
+.slide {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+.slide.shown {
+	opacity: 1;
+}
+.slide.measuring {
+	visibility: hidden;
+	transition: none;
+}
+
+.ref {
+	font-size: 2.6vh;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #d6a84a;
+	margin-bottom: 1vh;
+	flex: none;
+}
+
+.text {
+	font-weight: 600;
+	line-height: 1.28;
+	overflow: hidden;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+.text sup {
+	font-size: 0.55em;
+	font-weight: 700;
+	color: #d6a84a;
+	margin-right: 0.25em;
+	vertical-align: 0.55em;
+	line-height: 0;
+}

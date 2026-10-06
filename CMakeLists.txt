@@ -22,8 +22,8 @@ if(ENABLE_FRONTEND_API)
 endif()
 
 if(ENABLE_QT)
-  find_package(Qt6 REQUIRED COMPONENTS Widgets Core)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
+  find_package(Qt6 REQUIRED COMPONENTS Widgets Core Network)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network)
   target_compile_options(
     ${CMAKE_PROJECT_NAME}
     PRIVATE $<$<C_COMPILER_ID:Clang,AppleClang>:-Wno-quoted-include-in-framework-header -Wno-comma>
@@ -41,6 +41,12 @@ target_sources(
   PRIVATE
     src/bible/bible_module.cpp
     src/bible/bible_module.hpp
+    src/overlay/http_routes.cpp
+    src/overlay/http_routes.hpp
+    src/overlay/overlay_frame.cpp
+    src/overlay/overlay_frame.hpp
+    src/overlay/overlay_server.cpp
+    src/overlay/overlay_server.hpp
     src/plugin/plugin_main.cpp
     src/search/book_catalog.cpp
     src/search/book_catalog.hpp

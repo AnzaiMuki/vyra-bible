@@ -2,7 +2,7 @@
 
 Plugin OBS Studio gratuit, édité par **VYRA Concept**, pour afficher la Bible en direct avec une logique de régie : recherche d'un passage, **Preview**, puis **ON AIR**, sans jamais couper l'affichage.
 
-> **État : Milestone 04 sur 14.** Le dock est utilisable au clavier : on tape « Jn 3 16 », Entrée l'envoie en Preview, Ctrl+Entrée en ON AIR, Haut/Bas change de verset dans le Preview, Échap masque le Program. Le texte s'affiche en brut dans les écrans du dock : **rien n'est encore envoyé à OBS** (pas de source, pas de NDI) et le rendu final arrive au Milestone 05. Testé en simulation sous Linux ; jamais lancé dans OBS ni sous Windows. Voir [CHANGELOG.md](CHANGELOG.md).
+> **État : Milestone 05 sur 14.** Le dock pilote une page overlay transparente (lower third) que l'on ajoute dans OBS comme source Navigateur : ON AIR l'affiche avec un fondu, changer de verset ne la fait pas clignoter, Échap la retire. Testé sous Linux avec un vrai Chromium et de vrais sockets ; **jamais lancé dans OBS ni sous Windows, et pas encore testé en NDI**. Il n'y a qu'un seul thème (lower third). Voir [CHANGELOG.md](CHANGELOG.md) et [docs/OVERLAY.md](docs/OVERLAY.md).
 
 ## Architecture visée
 
