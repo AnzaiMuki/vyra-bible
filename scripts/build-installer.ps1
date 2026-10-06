@@ -49,6 +49,22 @@ Invoke-Checked "Build ($Config)" { cmake --build --preset windows-x64 --config $
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 Invoke-Checked "Stage files" { cmake --install $buildDir --config $Config --prefix $stage }
 
+# The setup must carry everything the plugin needs at run time: refuse to build an incomplete one.
+$required = @(
+    "vyra-bible\bin\64bit\vyra-bible.dll",
+    "vyra-bible\data\bibles\lsg1910.tsv",
+    "vyra-bible\data\overlay\index.html",
+    "vyra-bible\data\overlay\overlay.css",
+    "vyra-bible\data\overlay\overlay.js",
+    "vyra-bible\data\locale\fr-FR.ini",
+    "vyra-bible\data\locale\en-US.ini"
+)
+$missing = $required | Where-Object { -not (Test-Path (Join-Path $stage $_)) }
+if ($missing) {
+    throw "Staged files missing (setup not built): $($missing -join ', ')"
+}
+Write-Host "==> Staged files complete ($($required.Count) checked)" -ForegroundColor Cyan
+
 $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
 if (-not $iscc) {
     $candidates = @(

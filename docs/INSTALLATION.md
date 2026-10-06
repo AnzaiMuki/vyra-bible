@@ -13,12 +13,14 @@ Prérequis : Windows 64 bits, OBS Studio 30 ou plus récent. Le plugin est const
 
 ## Obtenir le setup .exe
 
-Le setup n'est pas encore produit : il faut le construire (aucun binaire n'existe pour l'instant).
+Le setup n'est pas encore produit : il faut le construire (aucun binaire n'existe pour l'instant). Un .exe Windows ne peut pas être fabriqué sur Linux ; il est construit par GitHub sur une machine Windows.
 
-**Option A : sans Visual Studio, via GitHub Actions**
-1. Poussez le projet sur un dépôt GitHub.
-2. Onglet **Actions** > **Windows installer** > **Run workflow**.
-3. Téléchargez l'artefact `VYRA-Bible-Setup` en fin d'exécution.
+**Option A : sans Visual Studio, via GitHub Actions** (le projet est déjà sur GitHub)
+1. Onglet **Actions** > **Windows installer** > **Run workflow** (branche `main`).
+2. Attendez la fin (la première fois, 15 à 30 minutes : téléchargement d'OBS et de Qt), ouvrez l'exécution, descendez à **Artifacts** et téléchargez `VYRA-Bible-Setup` (un .zip qui contient le .exe).
+3. Pour une version publique téléchargeable par tous (page **Releases**) : `git tag v0.5.0` puis `git push origin v0.5.0`. Le workflow construit le setup et l'attache à la release. Le nom du tag doit être identique à la version de `buildspec.json`, sinon le workflow s'arrête.
+
+Le script vérifie, avant de fabriquer le setup, que le plugin, la Bible, la page overlay et les deux fichiers de langue sont bien présents ; il refuse de produire un setup incomplet.
 
 **Option B : sur votre PC Windows**
 Voir [DEVELOPMENT.md](DEVELOPMENT.md), puis `.\scripts\build-installer.ps1`.

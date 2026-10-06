@@ -10,7 +10,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write # only to attach the setup to a GitHub Release when a tag v* is pushed
 
 jobs:
   installer:
@@ -34,3 +34,20 @@ jobs:
           name: VYRA-Bible-Setup
           path: release/VYRA-Bible-Setup-*.exe
           if-no-files-found: error
+
+      # A tag "v0.5.0" publishes the setup on the repository's Releases page, where anyone can download it.
+      - name: Check that the tag matches the plugin version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = (Get-Content buildspec.json -Raw | ConvertFrom-Json).version
+          if ("${{ github.ref_name }}" -ne "v$version") {
+            throw "Tag ${{ github.ref_name }} does not match buildspec.json version $version"
+          }
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/VYRA-Bible-Setup-*.exe
+          generate_release_notes: true
