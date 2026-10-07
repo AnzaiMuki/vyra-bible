@@ -34,6 +34,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <memory>
 
 #include "src/bible/bible_module.hpp"
+#include "src/obs/obs_source_setup.hpp"
 #include "src/overlay/overlay_frame.hpp"
 #include "src/overlay/overlay_server.hpp"
 #include "ui/vyra_dock.hpp"
@@ -159,6 +160,28 @@ bool obs_module_load(void)
 	dock->setStatus(bibleStatus + QLatin1Char('\n') + overlayStatus, !bibleOk || !overlayOk);
 
 	if (g_overlay) {
+		QPointer<vyra::overlay::OverlayServer> portSource(g_overlay.get());
+		dock->setAddSourceHandler([portSource]() -> QString {
+			if (!portSource)
+				return text("Error.OverlayPort").arg(kOverlayFirstPort).arg(kOverlayLastPort);
+			const std::string url = QStringLiteral("http://127.0.0.1:%1/").arg(portSource->port()).toStdString();
+			using vyra::obs::SetupResult;
+			switch (vyra::obs::ensureOverlaySource(url)) {
+			case SetupResult::Created:
+				return text("Status.SourceCreated");
+			case SetupResult::Updated:
+				return text("Status.SourceUpdated");
+			case SetupResult::AddedToScene:
+				return text("Status.SourceAdded");
+			case SetupResult::AlreadyReady:
+				return text("Status.SourceReady");
+			case SetupResult::NoScene:
+				return text("Error.NoScene");
+			case SetupResult::NoBrowserSource:
+				break;
+			}
+			return text("Error.NoBrowserSource");
+		});
 		QPointer<vyra::overlay::OverlayServer> server(g_overlay.get());
 		dock->setProgramListener([server](const vyra::stage::StageController &stage) {
 			if (server) // the server may be gone while OBS is still closing the dock

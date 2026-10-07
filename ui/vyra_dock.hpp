@@ -68,6 +68,13 @@ public:
 	using ProgramListener = std::function<void(const stage::StageController &)>;
 	void setProgramListener(ProgramListener listener);
 
+	/**
+	 * Action behind the "Add the source to OBS" button; it returns the message to show. Without it the
+	 * button is hidden (the dock knows nothing about OBS).
+	 */
+	using AddSourceHandler = std::function<QString()>;
+	void setAddSourceHandler(AddSourceHandler handler);
+
 	/** Sets the status line at the bottom of the dock. @p isError shows it in red. */
 	void setStatus(const QString &text, bool isError);
 
@@ -92,6 +99,8 @@ private:
 	search::QueryResult query_;
 	bool syncingField_ = false;
 	ProgramListener programListener_;
+	QPushButton *addSourceButton_ = nullptr;
+	AddSourceHandler addSourceHandler_;
 
 	QLineEdit *searchEdit_ = nullptr;
 	PickerPanel *picker_ = nullptr;

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0] - 2026-10-07 - Milestone 06 : intégration OBS
+
+### Ajouté
+- Bouton « Ajouter la source dans OBS » : crée la source Navigateur « VYRA Bible » (1920x1080, adresse du serveur local) dans la scène courante, la remet à la bonne adresse si le port a changé, ou l'ajoute à la scène courante si elle existe ailleurs. Ne supprime ni ne renomme rien ; refuse de toucher une source d'un autre type qui porte déjà ce nom. Le code OBS est isolé dans `src/obs/obs_source_setup.*`.
+
+### Vérifié
+- Le bouton du dock (visible seulement si une action lui est donnée, affiche son message) : `dock_ui_test`, 100 vérifications.
+- Les nouveaux fichiers compilent sans avertissement contre les vrais en-têtes d'OBS.
+
+### Non vérifié
+- **Tout le comportement réel** : aucun appel à libobs (création de la source, ajout à la scène, mise à jour) n'a été exécuté, il n'y a pas d'OBS ici. Les options de la source (`url`, `width`, `height`, `shutdown`, `restart_when_active`) viennent de ma connaissance de la source Navigateur, non d'un essai. La méthode manuelle reste valable.
+- Le fond transparent, le NDI, Windows, les workflows GitHub (voir les versions précédentes).
+
 ## [0.5.1] - 2026-10-07 - Sélection rapide des versets
 
 Demandé après un premier essai : le plugin n'était pas assez rapide pour suivre un prédicateur.
@@ -11,7 +24,7 @@ Demandé après un premier essai : le plugin n'était pas assez rapide pour suiv
 - Les clics du sélecteur ne prennent pas le focus : le clavier reste dans la barre de recherche.
 
 ### Vérifié
-- 200 vérifications de plus dans `search_test` : toutes les formes abrégées, les erreurs, l'absence de contexte, et chacun des 31 170 versets atteint par son seul numéro. Une altération volontaire (mauvais chapitre de contexte) est détectée.
+- Environ 280 vérifications de plus dans `search_test` : toutes les formes abrégées, les erreurs, l'absence de contexte, et chacun des 31 170 versets atteint par son seul numéro. Une altération volontaire (mauvais chapitre de contexte) est détectée.
 - `dock_ui_test` (97 vérifications, vraies touches et vrais clics simulés) : suivre une lecture au clavier, Livres, Chapitres, Versets, Maj+clic, Ctrl+clic, double-clic, couleurs bleu/rouge, un chiffre impossible ne change rien, un clic de sélecteur n'envoie rien à l'antenne.
 - Un défaut trouvé par ces tests et corrigé : après un changement de chapitre, les anciennes cellules restaient trouvables sous leur nom et un clic pouvait viser le mauvais chapitre.
 

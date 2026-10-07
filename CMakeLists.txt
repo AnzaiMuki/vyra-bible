@@ -41,6 +41,8 @@ target_sources(
   PRIVATE
     src/bible/bible_module.cpp
     src/bible/bible_module.hpp
+    src/obs/obs_source_setup.cpp
+    src/obs/obs_source_setup.hpp
     src/overlay/http_routes.cpp
     src/overlay/http_routes.hpp
     src/overlay/overlay_frame.cpp

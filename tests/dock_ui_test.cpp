@@ -156,6 +156,13 @@ int main(int c,char**v){QApplication app(c,v);
   CHECK(cell("verse-21")->property("preview").toBool() && !d.findChild<QToolButton*>("verse-22"));
   if(out) d.grab().save(QString("%1/m05b_picker.png").arg(out));
  }
+ { // the "add the source to OBS" button exists only when something can do it, and shows what happened
+  vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();
+  auto*add=d.findChild<QPushButton*>("addSourceButton"); CHECK(add && !add->isVisible());
+  int calls=0; d.setAddSourceHandler([&]{ ++calls; return QString("Source creee"); });
+  app.processEvents(); CHECK(add->isVisible());
+  QTest::mouseClick(add,Qt::LeftButton); CHECK(calls==1 && status(d)=="Source creee");
+ }
  { vyra::ui::VyraDock d(nullptr); d.show(); app.processEvents(); auto*e=d.findChild<QLineEdit*>();
    CHECK(!e->isEnabled()); for(int i=0;i<4;++i) CHECK(!btn(d,i)->isEnabled()); }
  return vyra::testing::finish();}

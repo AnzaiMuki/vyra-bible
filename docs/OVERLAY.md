@@ -4,6 +4,10 @@ VYRA Bible démarre un petit serveur web **sur ce seul ordinateur** (adresse `12
 
 ## Ajouter la source dans OBS
 
+**Méthode rapide :** bouton « Ajouter la source dans OBS » en bas du dock : il crée la source « VYRA Bible » (1920x1080) dans la scène courante, ou corrige son adresse si le port a changé. Il ne supprime ni ne renomme jamais rien, et refuse de toucher une source d'un autre type qui porterait déjà ce nom. *(Jamais essayé dans OBS : en cas de problème, utilisez la méthode manuelle ci-dessous et dites-le moi.)*
+
+**Méthode manuelle :**
+
 1. Lancez OBS, le dock VYRA Bible affiche en bas : `Source navigateur OBS : http://127.0.0.1:17420/`.
 2. Sources > + > Navigateur. Collez cette adresse. Largeur 1920, hauteur 1080.
 3. Laissez le CSS personnalisé par défaut : la page a déjà un fond transparent.

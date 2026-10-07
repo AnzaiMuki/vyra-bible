@@ -232,6 +232,18 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	picker_->setMinimumHeight(110);
 	root->addWidget(picker_, 1);
 
+	addSourceButton_ = new QPushButton(text("Button.AddSource"), this);
+	addSourceButton_->setObjectName(QStringLiteral("addSourceButton"));
+	addSourceButton_->setFlat(true);
+	addSourceButton_->setFocusPolicy(Qt::NoFocus);
+	addSourceButton_->setToolTip(text("Tooltip.AddSource"));
+	addSourceButton_->hide(); // shown once a handler is set
+	root->addWidget(addSourceButton_, 0, Qt::AlignLeft);
+	connect(addSourceButton_, &QPushButton::clicked, this, [this] {
+		if (addSourceHandler_)
+			setStatus(addSourceHandler_(), false);
+	});
+
 	statusLabel_ = new QLabel(this);
 	statusLabel_->setObjectName(QStringLiteral("dockStatus"));
 	statusLabel_->setWordWrap(true);
@@ -267,6 +279,12 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 }
 
 VyraDock::~VyraDock() = default;
+
+void VyraDock::setAddSourceHandler(AddSourceHandler handler)
+{
+	addSourceHandler_ = std::move(handler);
+	addSourceButton_->setVisible(static_cast<bool>(addSourceHandler_));
+}
 
 void VyraDock::setProgramListener(ProgramListener listener)
 {

@@ -38,6 +38,7 @@ Résultat : `release\VYRA-Bible-Setup-<version>.exe`.
 | `src/overlay/http_routes.*` | Vocabulaire HTTP minimal : routes, têtes de réponse, SSE (sans Qt, sans socket) |
 | `src/overlay/overlay_server.*` | Serveur local 127.0.0.1 (Qt Network) : page, `/state`, `/events` |
 | `data/overlay/` | La page HTML/CSS/JS affichée par la Browser Source d'OBS |
+| `src/obs/obs_source_setup.*` | Crée ou corrige la source Navigateur « VYRA Bible » (seul code qui crée des sources OBS) |
 | `ui/vyra_dock.*` | Dock opérateur : traduit clavier et clics en appels au contrôleur |
 | `ui/picker_panel.*` | Sélecteur Livres, Chapitres, Versets à la souris (ne décide rien : il signale les clics) |
 | `ui/stage_panel.*` | Écran 16:9 PREVIEW / PROGRAM |
@@ -66,7 +67,7 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 ## Checklist de test (sur Windows, jusqu'au Milestone 05 (et la sélection rapide))
 
 1. Le build se termine sans erreur.
-2. OBS démarre ; le journal contient `[vyra-bible] loading (version 0.5.1)` puis `dock registered`.
+2. OBS démarre ; le journal contient `[vyra-bible] loading (version 0.6.0)` puis `dock registered`.
 3. Menu Docks > VYRA Bible : le dock s'affiche avec Preview et Program en 16:9.
 4. Redimensionner le dock : les écrans gardent leur ratio.
 5. Le journal contient `Bible loaded: Louis Segond 1910 (LSG1910), 31170 verses` et le bas du dock affiche « Louis Segond 1910 chargée (31170 versets) ».
@@ -85,3 +86,4 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 18. Taper `Jn 3:16` + Entrée, puis `17` + Entrée : Jean 3:17 en Preview, sans retaper le livre. Le champ est sélectionné après chaque envoi.
 19. Taper `19-21`, puis `4:1` : Jean 3:19–21, puis Jean 4:1.
 20. Sélecteur : cliquer Jn dans Livres, 3 dans Chapitres, 16 dans Versets : Preview. Maj+clic sur 18 : plage 16 à 18. Ctrl+clic ou double-clic sur un verset : ON AIR (cellule rouge).
+21. Cliquer « Ajouter la source dans OBS » : la source « VYRA Bible » apparaît dans la scène courante (1920x1080) ; le message du dock le confirme. Recliquer : « déjà en place ». Changer de scène et recliquer : elle est ajoutée à cette scène. Si OBS a démarré sur un autre port, le clic corrige l'adresse.
