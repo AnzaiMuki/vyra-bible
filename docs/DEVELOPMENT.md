@@ -87,3 +87,6 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 19. Taper `19-21`, puis `4:1` : Jean 3:19–21, puis Jean 4:1.
 20. Sélecteur : cliquer Jn dans Livres, 3 dans Chapitres, 16 dans Versets : Preview. Maj+clic sur 18 : plage 16 à 18. Ctrl+clic ou double-clic sur un verset : ON AIR (cellule rouge).
 21. Cliquer « Ajouter la source dans OBS » : la source « VYRA Bible » apparaît dans la scène courante (1920x1080) ; le message du dock le confirme. Recliquer : « déjà en place ». Changer de scène et recliquer : elle est ajoutée à cette scène. Si OBS a démarré sur un autre port, le clic corrige l'adresse.
+22. Menu de thème du dock : Bandeau bas, Plein écran, Texte seul. Mettre Ps 119:1-40 à l'antenne : le texte est coupé en pages, le dock affiche « Page 1/N ».
+23. PageDown / PageUp dans la barre de recherche (ou les boutons) : l'écran d'OBS change de page avec un fondu, le PREVIEW ne bouge pas.
+24. Changer de thème pendant l'antenne : l'écran d'OBS change de style et revient à la page 1. Vérifier la lisibilité de chaque thème sur l'écran final.

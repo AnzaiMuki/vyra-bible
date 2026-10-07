@@ -65,9 +65,13 @@ Frame makeFrame(const stage::StageController &controller, unsigned long long rev
 {
 	Frame frame;
 	frame.revision = revision;
-	if (controller.programLive()) {
+	frame.theme = stage::themeName(controller.theme());
+	if (controller.programLive() && !controller.programPages().empty()) {
 		frame.visible = true;
-		frame.slide = controller.slide(*controller.program());
+		frame.reference = search::formatPassage(*controller.program(), controller.module());
+		frame.pages = static_cast<int>(controller.programPages().size());
+		frame.page = static_cast<int>(controller.programPage()) + 1;
+		frame.verses = controller.programPages()[controller.programPage()].verses;
 	}
 	return frame;
 }
@@ -76,17 +80,23 @@ std::string toJson(const Frame &frame)
 {
 	std::string out = "{\"rev\":" + std::to_string(frame.revision);
 	out += frame.visible ? ",\"visible\":true" : ",\"visible\":false";
+	out += ",\"theme\":";
+	appendString(out, frame.theme);
+	out += ",\"page\":" + std::to_string(frame.visible ? frame.page : 1);
+	out += ",\"pages\":" + std::to_string(frame.visible ? frame.pages : 1);
 	out += ",\"reference\":";
-	appendString(out, frame.visible ? frame.slide.reference : std::string());
+	appendString(out, frame.visible ? frame.reference : std::string());
 	out += ",\"verses\":[";
 	if (frame.visible) {
 		bool first = true;
-		for (const stage::SlideVerse &v : frame.slide.verses) {
+		for (const stage::PageVerse &v : frame.verses) {
 			if (!first)
 				out += ',';
 			first = false;
 			out += "{\"c\":" + std::to_string(v.chapter) + ",\"v\":" + std::to_string(v.verse) + ",\"t\":";
 			appendString(out, v.text);
+			if (v.continuation)
+				out += ",\"k\":true";
 			out += '}';
 		}
 	}

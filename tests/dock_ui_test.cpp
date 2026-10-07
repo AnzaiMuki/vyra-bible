@@ -11,6 +11,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QApplication>
 #include <QFile>
+#include <QComboBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMap>
@@ -155,6 +156,38 @@ int main(int c,char**v){QApplication app(c,v);
   QTest::keyClicks(edit,"Ap 22:21"); QTest::keyClick(edit,Qt::Key_Return);
   CHECK(cell("verse-21")->property("preview").toBool() && !d.findChild<QToolButton*>("verse-22"));
   if(out) d.grab().save(QString("%1/m05b_picker.png").arg(out));
+ }
+ { // themes and pages: long passage on the air is paged, short one is not; only the program moves
+  vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();
+  int heard=0; std::string theme; std::size_t page=99,pages=0;
+  d.setProgramListener([&](const vyra::stage::StageController&s){ ++heard; theme=vyra::stage::themeName(s.theme()); page=s.programPage(); pages=s.programPages().size(); });
+  auto*edit=d.findChild<QLineEdit*>(); auto*box=d.findChild<QComboBox*>("themeBox"); auto*lab=d.findChild<QLabel*>("pageLabel");
+  QPushButton*pp=nullptr,*pn=nullptr;
+  for(auto*b:d.findChildren<QPushButton*>()){ if(b->text().contains("Page")&&b->text().startsWith(QString::fromUtf8("\xE2\x97\x80"))) pp=b; else if(b->text().startsWith("Page")) pn=b; }
+  CHECK(box && lab && pp && pn && box->count()==3);
+  CHECK(theme=="lower" && !pn->isVisible());
+  QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
+  CHECK(pages==1 && lab->text().isEmpty() && !pn->isVisible());
+  edit->selectAll(); QTest::keyClicks(edit,"Ps 119:1-40"); QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(pages==1);                                                    // preview only: the program is untouched
+  QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier); app.processEvents();
+  CHECK(pages>1 && page==0 && pn->isVisible() && lab->text()==QString("Page 1/%1").arg(pages));
+  CHECK(!pp->isEnabled() && pn->isEnabled());
+  const int before=heard; const auto previewText=contents(d)[0]->text();
+  QTest::keyClick(edit,Qt::Key_PageDown); CHECK(page==1 && heard==before+1 && lab->text().startsWith("Page 2/"));
+  CHECK(contents(d)[0]->text()==previewText);                        // pages never touch the preview
+  QTest::mouseClick(pn,Qt::LeftButton); CHECK(page==2);
+  QTest::mouseClick(pp,Qt::LeftButton); CHECK(page==1);
+  QTest::keyClick(edit,Qt::Key_PageUp); CHECK(page==0);
+  const int h2=heard; QTest::keyClick(edit,Qt::Key_PageUp); CHECK(page==0 && heard==h2); // at the first page: nothing sent
+  for(std::size_t i=1;i<pages;++i) QTest::keyClick(edit,Qt::Key_PageDown);
+  CHECK(page==pages-1 && !pn->isEnabled()); const int h3=heard; QTest::keyClick(edit,Qt::Key_PageDown); CHECK(heard==h3);
+  // a theme change is heard, re-cuts the pages (page 1) and is kept for the next passages
+  box->setCurrentIndex(1); QMetaObject::invokeMethod(box,"activated",Q_ARG(int,1)); app.processEvents();
+  CHECK(theme=="full" && page==0 && heard==h3+1);
+  QTest::keyClick(edit,Qt::Key_Escape);                              // hidden: page keys do nothing
+  const int h4=heard; QTest::keyClick(edit,Qt::Key_PageDown); CHECK(heard==h4 && !pn->isEnabled());
+  if(out) d.grab().save(QString("%1/m07_dock.png").arg(out));
  }
  { // the "add the source to OBS" button exists only when something can do it, and shows what happened
   vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();

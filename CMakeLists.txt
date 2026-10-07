@@ -55,6 +55,9 @@ target_sources(
     src/search/passage_query.cpp
     src/search/passage_query.hpp
     src/stage/stage_controller.cpp
+    src/stage/paginator.cpp
+    src/stage/paginator.hpp
+    src/stage/slide.hpp
     src/stage/stage_controller.hpp
     ui/picker_panel.cpp
     ui/picker_panel.hpp

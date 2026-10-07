@@ -228,6 +228,56 @@ void testSlide()
 	CHECK(s.slide(Passage{}).verses.empty());
 }
 
+void testThemeAndPages()
+{
+	StageController s(g_bible);
+	CHECK(s.theme() == Theme::LowerThird);
+	CHECK(std::string(themeName(Theme::LowerThird)) == "lower" && std::string(themeName(Theme::FullScreen)) == "full" &&
+	      std::string(themeName(Theme::Minimal)) == "minimal");
+	CHECK(pageBudget(Theme::FullScreen) > pageBudget(Theme::LowerThird));
+
+	// Nothing on the air: no pages, no page changes.
+	CHECK(s.programPages().empty() && !s.nextPage() && !s.previousPage());
+
+	s.showInPreview(resolved("Ps 119"));
+	CHECK(s.programPages().empty());                       // the preview is not paginated for the program
+	s.takeOnAir();
+	const std::size_t lower = s.programPages().size();
+	CHECK(lower > 10 && s.programPage() == 0);
+
+	// Pages move the PROGRAM only, one at a time, and stop at both ends.
+	CHECK(!s.previousPage());
+	CHECK(s.nextPage() && s.programPage() == 1);
+	CHECK(s.nextPage() && s.programPage() == 2);
+	CHECK(s.previousPage() && s.programPage() == 1);
+	while (s.nextPage()) {}
+	CHECK(s.programPage() == lower - 1 && !s.nextPage());
+	CHECK(s.preview().has_value() && s.preview()->endChapter == 119); // preview untouched
+
+	// A bigger screen holds more: fewer pages; the program goes back to page 1; what is on the air is the same passage.
+	const Passage onAir = *s.program();
+	s.setTheme(Theme::FullScreen);
+	CHECK(s.theme() == Theme::FullScreen && s.programPage() == 0);
+	CHECK(s.programPages().size() < lower && s.programLive() && same(*s.program(), onAir));
+	s.setTheme(Theme::FullScreen);                          // same theme: nothing moves
+	CHECK(s.nextPage()); s.setTheme(Theme::FullScreen); CHECK(s.programPage() == 1);
+
+	// A new passage on the air always starts at page 1.
+	s.showInPreview(resolved("Ps 23")); s.takeOnAir();
+	CHECK(s.programPage() == 0);
+
+	// Hidden: pages cannot be turned; shown again, page 1.
+	s.showInPreview(resolved("Ps 119")); s.takeOnAir(); s.nextPage();
+	s.hideProgram();
+	CHECK(!s.nextPage() && !s.previousPage());
+	s.takeOnAir();
+	CHECK(s.programPage() == 0 && s.programLive());
+
+	// A single short verse is a single page.
+	s.showInPreview(resolved("Jn 3:16")); s.takeOnAir();
+	CHECK(s.programPages().size() == 1 && !s.nextPage());
+}
+
 } // namespace
 
 int main()
@@ -248,5 +298,6 @@ int main()
 	testWalkThroughTheWholeBible();
 	testModuleWithMissingBooks();
 	testSlide();
+	testThemeAndPages();
 	return vyra::testing::finish();
 }

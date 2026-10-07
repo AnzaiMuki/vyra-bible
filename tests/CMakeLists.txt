@@ -59,6 +59,7 @@ add_executable(
   "${VYRA_ROOT}/src/search/book_catalog.cpp"
   "${VYRA_ROOT}/src/search/passage_query.cpp"
   "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+  "${VYRA_ROOT}/src/stage/paginator.cpp"
 )
 target_include_directories(stage_test PRIVATE "${VYRA_ROOT}")
 target_compile_definitions(stage_test PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv")
@@ -81,6 +82,7 @@ if(Qt6_FOUND)
     "${VYRA_ROOT}/src/overlay/overlay_frame.cpp"
     "${VYRA_ROOT}/src/overlay/http_routes.cpp"
     "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+    "${VYRA_ROOT}/src/stage/paginator.cpp"
     "${VYRA_ROOT}/src/bible/bible_module.cpp"
     "${VYRA_ROOT}/src/search/book_catalog.cpp"
     "${VYRA_ROOT}/src/search/passage_query.cpp"
@@ -98,6 +100,7 @@ if(Qt6_FOUND)
     "${VYRA_ROOT}/src/overlay/overlay_frame.cpp"
     "${VYRA_ROOT}/src/overlay/http_routes.cpp"
     "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+    "${VYRA_ROOT}/src/stage/paginator.cpp"
     "${VYRA_ROOT}/src/bible/bible_module.cpp"
     "${VYRA_ROOT}/src/search/book_catalog.cpp"
     "${VYRA_ROOT}/src/search/passage_query.cpp"
@@ -121,6 +124,7 @@ if(Qt6_FOUND)
     "${VYRA_ROOT}/src/search/book_catalog.cpp"
     "${VYRA_ROOT}/src/search/passage_query.cpp"
     "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+    "${VYRA_ROOT}/src/stage/paginator.cpp"
   )
   # ui/vyra_dock.cpp includes <obs-module.h> and <plugin-support.h>: only the stubs of tests/stubs are used.
   target_include_directories(dock_ui_test PRIVATE "${VYRA_ROOT}" "${CMAKE_CURRENT_SOURCE_DIR}/stubs")
@@ -136,12 +140,44 @@ if(Qt6_FOUND)
 endif()
 
 add_executable(
+  paginator_test
+  paginator_test.cpp
+  "${VYRA_ROOT}/src/bible/bible_module.cpp"
+  "${VYRA_ROOT}/src/search/book_catalog.cpp"
+  "${VYRA_ROOT}/src/search/passage_query.cpp"
+  "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+  "${VYRA_ROOT}/src/stage/paginator.cpp"
+)
+target_include_directories(paginator_test PRIVATE "${VYRA_ROOT}")
+target_compile_definitions(paginator_test PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv")
+if(MSVC)
+  target_compile_options(paginator_test PRIVATE /W4 /utf-8)
+else()
+  target_compile_options(paginator_test PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+add_test(NAME paginator COMMAND paginator_test)
+
+add_executable(
+  frames_dump
+  frames_dump.cpp
+  "${VYRA_ROOT}/src/bible/bible_module.cpp"
+  "${VYRA_ROOT}/src/search/book_catalog.cpp"
+  "${VYRA_ROOT}/src/search/passage_query.cpp"
+  "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+  "${VYRA_ROOT}/src/stage/paginator.cpp"
+  "${VYRA_ROOT}/src/overlay/overlay_frame.cpp"
+)
+target_include_directories(frames_dump PRIVATE "${VYRA_ROOT}")
+target_compile_definitions(frames_dump PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv")
+
+add_executable(
   overlay_test
   overlay_test.cpp
   "${VYRA_ROOT}/src/bible/bible_module.cpp"
   "${VYRA_ROOT}/src/search/book_catalog.cpp"
   "${VYRA_ROOT}/src/search/passage_query.cpp"
   "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+  "${VYRA_ROOT}/src/stage/paginator.cpp"
   "${VYRA_ROOT}/src/overlay/overlay_frame.cpp"
   "${VYRA_ROOT}/src/overlay/http_routes.cpp"
 )
@@ -165,7 +201,10 @@ if(Python3_FOUND)
     ERROR_QUIET
   )
   if(NOT VYRA_PLAYWRIGHT_MISSING)
-    add_test(NAME overlay_page COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/overlay_page_test.py")
+    add_test(
+      NAME overlay_page
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/overlay_page_test.py" "" "$<TARGET_FILE:frames_dump>"
+    )
     if(TARGET overlay_demo AND NOT WIN32)
       add_test(
         NAME overlay_e2e

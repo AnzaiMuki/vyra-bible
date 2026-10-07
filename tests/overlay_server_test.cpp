@@ -76,8 +76,8 @@ Frame onAir(unsigned long long rev, const char *ref, const char *text)
 	Frame f;
 	f.revision = rev;
 	f.visible = true;
-	f.slide.reference = ref;
-	f.slide.verses.push_back({3, 16, text});
+	f.reference = ref;
+	f.verses.push_back({3, 16, text, false});
 	return f;
 }
 
@@ -195,7 +195,7 @@ void testStateAndStream()
 	CHECK(server.start(18460, 18469));
 	const quint16 p = server.port();
 
-	CHECK(bodyOf(get(p, "/state")) == "{\"rev\":0,\"visible\":false,\"reference\":\"\",\"verses\":[]}");
+	CHECK(bodyOf(get(p, "/state")) == "{\"rev\":0,\"visible\":false,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"\",\"verses\":[]}");
 
 	server.publish(onAir(1, "Jean 3:16", "Car Dieu"));
 	CHECK(bodyOf(get(p, "/state")).contains("\"reference\":\"Jean 3:16\""));
@@ -206,7 +206,7 @@ void testStateAndStream()
 	CHECK(waitFor([&] { return a.messages() == 1; }));
 	CHECK(a.received.startsWith("HTTP/1.1 200 OK"));
 	CHECK(a.received.contains("text/event-stream"));
-	CHECK(a.received.contains("data: {\"rev\":1,\"visible\":true,\"reference\":\"Jean 3:16\""));
+	CHECK(a.received.contains("data: {\"rev\":1,\"visible\":true,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"Jean 3:16\""));
 	CHECK(waitFor([&] { return server.clientCount() == 1; }));
 
 	// Every published frame reaches every client, in order.

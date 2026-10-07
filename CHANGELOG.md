@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0] - 2026-10-07 - Milestone 07 : thèmes et pagination
+
+### Ajouté
+- **Trois thèmes** choisis dans le dock : Bandeau bas, Plein écran, Texte seul. Changer de thème ne change pas ce qui est à l'antenne, mais ramène le passage à la page 1.
+- **Pagination** : un passage trop long pour un écran est coupé en pages (260 caractères pour bandeau/texte seul, 650 pour plein écran), aux espaces, sans perte de texte ; un verset coupé est signalé comme « suite ». La police est ensuite ajustée pour que la page tienne exactement.
+- **Navigation par pages** : boutons « ◀ Page » / « Page ▶ », touches PageUp / PageDown dans la barre de recherche, indicateur « Page 2/5 ». Les pages ne bougent que le PROGRAM, jamais le PREVIEW. Mettre un passage à l'antenne commence toujours à la page 1.
+- Le message envoyé à la page overlay contient maintenant `theme`, `page`, `pages` et les versets de la page.
+
+### Vérifié (Linux, sans OBS)
+- `paginator_test` : aucune perte de texte, coupures aux espaces, budgets respectés ; une altération volontaire (budget du bandeau à 900) est détectée.
+- `stage_test`, `overlay_test`, `overlay_server_test` mis à jour ; `dock_ui_test` : vraies touches et vrais clics (PageUp/PageDown, boutons, thème, pages sans effet sur le Preview, aucun envoi aux bornes, touches inactives si masqué) ; une altération volontaire (page changée sans prévenir l'overlay) est détectée.
+- `overlay_page_test` (Chromium) : 64 vérifications ; la plus petite police sur les pages les plus pleines reste lisible (environ 4,2 % de la hauteur de l'écran au minimum).
+- Compilation sans erreur contre les vrais en-têtes d'OBS.
+
+### Non vérifié
+- Tout ce qui demande OBS, Windows, MSVC, le NDI et la transparence réelle, ainsi que les workflows GitHub. Le rendu des thèmes n'a été vu que dans Chromium sous Linux, pas dans le navigateur intégré d'OBS.
+- La lisibilité réelle à distance (taille d'écran, projection) : à juger sur place.
+
 ## [0.6.0] - 2026-10-07 - Milestone 06 : intégration OBS
 
 ### Ajouté

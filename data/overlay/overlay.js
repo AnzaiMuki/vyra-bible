@@ -11,21 +11,32 @@
 	"use strict";
 
 	var FADE_MS = 300;
-	var MAX_FONT_VH = 5.2;
 	var MIN_FONT_VH = 2.4;
+	// Largest font of each theme, in vh of the screen.
+	var MAX_FONT_VH = { lower: 5.2, full: 7.2, minimal: 5.2 };
+	var DEFAULT_THEME = "lower";
 
 	var panel = document.getElementById("panel");
 	var slides = document.getElementById("slides");
 	var lastRevision = -1;
 	var currentKey = null; // what the visible slide shows, to skip a redraw of identical content
 	var currentFrame = null; // the frame behind the visible slide, to lay it out again if the window is resized
+	var currentTheme = null; // theme of the panel as drawn now
+	var latestFrame = null; // the newest frame received (used when the panel waits for a theme change)
+	var switching = false; // the panel is fading out to change theme
 
 	function makeSlide(frame) {
 		var slide = document.createElement("div");
 		slide.className = "slide";
 		var ref = document.createElement("div");
 		ref.className = "ref";
-		ref.textContent = frame.reference;
+		ref.appendChild(document.createTextNode(frame.reference));
+		if (frame.pages > 1) {
+			var page = document.createElement("span");
+			page.className = "page";
+			page.textContent = frame.page + "/" + frame.pages;
+			ref.appendChild(page);
+		}
 		var text = document.createElement("div");
 		text.className = "text";
 		slide.appendChild(ref);
@@ -33,11 +44,11 @@
 		return slide;
 	}
 
-	function fillText(textEl, verses, count, truncated) {
+	function fillText(textEl, verses, count, truncated, numbered) {
 		textEl.textContent = "";
-		var numbered = verses.length > 1;
 		for (var i = 0; i < count; i++) {
-			if (numbered) {
+			// The piece of a verse that went over to this page ("k") has no number: it is not a new verse.
+			if (numbered && !verses[i].k) {
 				var sup = document.createElement("sup");
 				sup.textContent = String(verses[i].v);
 				textEl.appendChild(sup);
@@ -54,9 +65,9 @@
 	}
 
 	// The largest font size (in vh) at which the text fits, or 0 if even the smallest does not.
-	function fitFontSize(textEl) {
+	function fitFontSize(textEl, maxFont) {
 		var lo = MIN_FONT_VH;
-		var hi = MAX_FONT_VH;
+		var hi = maxFont;
 		textEl.style.fontSize = lo + "vh";
 		if (!fits(textEl)) {
 			return 0;
@@ -78,20 +89,30 @@
 		var textEl = slide.querySelector(".text");
 		var verses = frame.verses;
 		var count = verses.length;
-		fillText(textEl, verses, count, false);
-		if (fitFontSize(textEl) > 0) {
+		var numbered = frame.pages > 1 || verses.length > 1;
+		var maxFont = MAX_FONT_VH[frame.theme] || MAX_FONT_VH[DEFAULT_THEME];
+		slide.removeAttribute("data-truncated");
+		fillText(textEl, verses, count, false, numbered);
+		if (fitFontSize(textEl, maxFont) > 0) {
 			return;
 		}
-		// Too long even at the smallest size: keep as many whole verses as fit.
+		// Safety net (pages are cut to fit, so this should not happen): keep as many whole verses as fit.
+		slide.setAttribute("data-truncated", "1");
 		textEl.style.fontSize = MIN_FONT_VH + "vh";
 		while (count > 1) {
 			count--;
-			fillText(textEl, verses, count, true);
+			fillText(textEl, verses, count, true, numbered);
 			if (fits(textEl)) {
 				return;
 			}
 		}
-		fillText(textEl, verses, 1, true);
+		fillText(textEl, verses, 1, true, numbered);
+	}
+
+	function setTheme(theme) {
+		var name = MAX_FONT_VH[theme] ? theme : DEFAULT_THEME;
+		panel.className = "theme-" + name;
+		currentTheme = name;
 	}
 
 	function show(frame) {
@@ -99,6 +120,10 @@
 			return; // an older frame arriving late
 		}
 		lastRevision = frame.rev;
+		latestFrame = frame;
+		if (switching) {
+			return; // the newest frame is drawn when the panel has changed theme
+		}
 
 		if (!frame.visible) {
 			currentKey = null;
@@ -114,7 +139,37 @@
 			return;
 		}
 
-		var key = frame.reference + "\u0000" + JSON.stringify(frame.verses);
+		var theme = MAX_FONT_VH[frame.theme] ? frame.theme : DEFAULT_THEME;
+		if (currentTheme !== null && theme !== currentTheme) {
+			// A change of theme moves the whole panel: it fades out, changes, and fades in again.
+			if (panel.classList.contains("on")) {
+				switching = true;
+				panel.classList.remove("on");
+				window.setTimeout(function () {
+					switching = false;
+					slides.textContent = "";
+					currentKey = null;
+					setTheme(latestFrame.theme);
+					draw(latestFrame);
+				}, FADE_MS + 30);
+				return;
+			}
+		}
+		if (currentTheme !== theme) {
+			setTheme(theme);
+		}
+		draw(frame);
+	}
+
+	function draw(frame) {
+		if (!frame.visible) {
+			panel.classList.remove("on");
+			currentKey = null;
+			currentFrame = null;
+			return;
+		}
+		var key = frame.theme + "\u0000" + frame.page + "/" + frame.pages + "\u0000" + frame.reference + "\u0000" +
+			JSON.stringify(frame.verses);
 		if (key === currentKey) {
 			panel.classList.add("on");
 			return;

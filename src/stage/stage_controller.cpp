@@ -103,12 +103,70 @@ bool StageController::previewPrevious()
 	return true;
 }
 
+const char *themeName(Theme theme)
+{
+	switch (theme) {
+	case Theme::LowerThird:
+		return "lower";
+	case Theme::FullScreen:
+		return "full";
+	case Theme::Minimal:
+		return "minimal";
+	}
+	return "lower";
+}
+
+std::size_t pageBudget(Theme theme)
+{
+	switch (theme) {
+	case Theme::FullScreen:
+		return 650;
+	case Theme::Minimal:
+	case Theme::LowerThird:
+		break;
+	}
+	return 260;
+}
+
+void StageController::repaginate()
+{
+	programPages_.clear();
+	programPage_ = 0;
+	if (program_)
+		programPages_ = paginate(slide(*program_), pageBudget(theme_));
+}
+
 bool StageController::takeOnAir()
 {
 	if (!preview_)
 		return false;
 	program_ = preview_;
 	programVisible_ = true;
+	repaginate();
+	return true;
+}
+
+void StageController::setTheme(Theme theme)
+{
+	if (theme == theme_)
+		return;
+	theme_ = theme;
+	repaginate();
+}
+
+bool StageController::nextPage()
+{
+	if (!programLive() || programPage_ + 1 >= programPages_.size())
+		return false;
+	++programPage_;
+	return true;
+}
+
+bool StageController::previousPage()
+{
+	if (!programLive() || programPage_ == 0)
+		return false;
+	--programPage_;
 	return true;
 }
 

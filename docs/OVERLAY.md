@@ -31,3 +31,7 @@ Le serveur n'écoute que `127.0.0.1`, n'accepte que `GET`, ne sert que trois fic
 
 - `http://127.0.0.1:17420/state` : l'image courante en JSON.
 - `http://127.0.0.1:17420/?manual=1` : la page sans connexion au plugin ; dans la console du navigateur, `vyraShow({rev:1, visible:true, reference:"Jean 3:16", verses:[{c:3,v:16,t:"..."}]})` affiche ce que vous voulez.
+
+## Thèmes et pages
+
+Le dock choisit le thème (`lower`, `full`, `minimal`) ; la page overlay le reçoit dans chaque message avec `page`, `pages` et les versets de la page courante. La page ne fait que dessiner : la coupure en pages est faite en C++ (`src/stage/paginator.*`), sans perte de texte. Si le texte ne tient pas, la page réduit la police par dichotomie ; en dernier recours elle tronque et marque `data-truncated` (jamais observé dans les tests).

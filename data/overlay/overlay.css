@@ -1,5 +1,9 @@
-/* VYRA Bible overlay: lower third. Everything is sized from the viewport, so any Browser Source size works.
-   The background is fully transparent: only the panel is drawn. */
+/* VYRA Bible overlay. Everything is sized from the viewport, so any Browser Source size works.
+   The background is fully transparent: only the panel is drawn.
+   Three themes, chosen by the class of #panel:
+     theme-lower    lower third: a band at the bottom with a gold bar on the left
+     theme-full     full screen: the whole picture, text centered
+     theme-minimal  no band: white text with a strong shadow, at the bottom */
 html, body {
 	margin: 0;
 	height: 100%;
@@ -10,13 +14,7 @@ html, body {
 
 #panel {
 	position: fixed;
-	left: 6vw;
-	right: 6vw;
-	bottom: 6vh;
 	box-sizing: border-box;
-	padding: 2.2vh 2.4vw 2.4vh calc(2.4vw + 0.7vw);
-	background: rgba(8, 10, 14, 0.86);
-	border-left: 0.7vw solid #d6a84a;
 	color: #ffffff;
 	opacity: 0;
 	transition: opacity 0.3s ease;
@@ -27,8 +25,6 @@ html, body {
 
 #slides {
 	position: relative;
-	/* The room available for one slide. Fitting the text into it is done in overlay.js. */
-	height: 30vh;
 }
 
 .slide {
@@ -49,13 +45,17 @@ html, body {
 }
 
 .ref {
-	font-size: 2.6vh;
 	font-weight: 700;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	color: #d6a84a;
-	margin-bottom: 1vh;
 	flex: none;
+}
+.ref .page {
+	margin-left: 0.8em;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	color: rgba(255, 255, 255, 0.7);
 }
 
 .text {
@@ -72,4 +72,70 @@ html, body {
 	margin-right: 0.25em;
 	vertical-align: 0.55em;
 	line-height: 0;
+}
+
+/* ---- lower third ---- */
+#panel.theme-lower {
+	left: 6vw;
+	right: 6vw;
+	bottom: 6vh;
+	padding: 2.2vh 2.4vw 2.4vh calc(2.4vw + 0.7vw);
+	background: rgba(8, 10, 14, 0.86);
+	border-left: 0.7vw solid #d6a84a;
+}
+#panel.theme-lower #slides {
+	height: 30vh;
+}
+#panel.theme-lower .ref {
+	font-size: 2.6vh;
+	margin-bottom: 1vh;
+}
+
+/* ---- full screen ---- */
+#panel.theme-full {
+	inset: 0;
+	padding: 7vh 9vw;
+	background: rgba(5, 7, 10, 0.93);
+}
+#panel.theme-full #slides {
+	height: 100%;
+}
+#panel.theme-full .ref {
+	order: 2;
+	text-align: center;
+	font-size: 3.2vh;
+	margin-top: 3vh;
+}
+#panel.theme-full .text {
+	order: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	text-align: center;
+}
+
+/* ---- minimal: text only ---- */
+#panel.theme-minimal {
+	left: 8vw;
+	right: 8vw;
+	bottom: 7vh;
+	padding: 0;
+	text-shadow: 0 0.2vh 0.8vh rgba(0, 0, 0, 0.95), 0 0 2.4vh rgba(0, 0, 0, 0.9);
+}
+#panel.theme-minimal #slides {
+	height: 26vh;
+}
+#panel.theme-minimal .slide {
+	justify-content: flex-end;
+}
+#panel.theme-minimal .ref {
+	order: 2;
+	text-align: center;
+	font-size: 2.4vh;
+	margin-top: 1vh;
+}
+#panel.theme-minimal .text {
+	order: 1;
+	flex: 0 1 auto;
+	text-align: center;
 }

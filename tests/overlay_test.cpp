@@ -189,19 +189,19 @@ Frame frameWith(const std::string &reference, const std::string &verseText)
 	Frame f;
 	f.revision = 7;
 	f.visible = true;
-	f.slide.reference = reference;
-	f.slide.verses.push_back({1, 2, verseText});
+	f.reference = reference;
+	f.verses.push_back({1, 2, verseText, false});
 	return f;
 }
 
 void testJsonShape()
 {
 	Frame f = frameWith("Jean 3:16", "Car Dieu");
-	CHECK(toJson(f) == "{\"rev\":7,\"visible\":true,\"reference\":\"Jean 3:16\",\"verses\":[{\"c\":1,\"v\":2,\"t\":\"Car Dieu\"}]}");
+	CHECK(toJson(f) == "{\"rev\":7,\"visible\":true,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"Jean 3:16\",\"verses\":[{\"c\":1,\"v\":2,\"t\":\"Car Dieu\"}]}");
 
 	Frame hidden;
 	hidden.revision = 8;
-	CHECK(toJson(hidden) == "{\"rev\":8,\"visible\":false,\"reference\":\"\",\"verses\":[]}");
+	CHECK(toJson(hidden) == "{\"rev\":8,\"visible\":false,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"\",\"verses\":[]}");
 
 	// A hidden frame never carries text, even if the slide still holds some.
 	Frame stale = frameWith("Jean 3:16", "Car Dieu");
@@ -233,31 +233,51 @@ void testJsonEscaping()
 
 void testWholeBibleRoundTrip()
 {
+	// Every chapter, every page, every theme: each frame goes through the JSON and is read back; putting the
+	// pieces together gives back each verse of the Bible exactly.
 	StageController s(g_bible);
-	std::size_t checkedVerses = 0;
+	std::size_t verses = 0, frames = 0;
 	bool allGood = true;
-	for (int book = 1; book <= 66; ++book) {
-		for (int chapter = 1; chapter <= g_bible.chapterCount(book); ++chapter) {
-			const Passage whole{book, chapter, 1, chapter, g_bible.verseCount(book, chapter)};
-			CHECK(s.showInPreview(whole));
-			CHECK(s.takeOnAir());
-			const Frame f = makeFrame(s, 1);
-			Json j;
-			if (!parse(toJson(f), j) || j.o["verses"].a.size() != f.slide.verses.size()) {
-				allGood = false;
-				continue;
-			}
-			for (std::size_t i = 0; i < f.slide.verses.size(); ++i) {
-				const auto &jv = j.o["verses"].a[i].o;
-				if (jv.at("t").s != f.slide.verses[i].text || jv.at("v").n != f.slide.verses[i].verse ||
-				    jv.at("c").n != f.slide.verses[i].chapter)
+	for (const Theme theme : {Theme::LowerThird, Theme::FullScreen, Theme::Minimal}) {
+		s.setTheme(theme);
+		verses = 0;
+		for (int book = 1; book <= 66; ++book) {
+			for (int chapter = 1; chapter <= g_bible.chapterCount(book); ++chapter) {
+				CHECK(s.showInPreview({book, chapter, 1, chapter, g_bible.verseCount(book, chapter)}));
+				CHECK(s.takeOnAir());
+				std::map<int, std::string> rebuilt; // verse -> text put together from the pieces read from JSON
+				int expectedPage = 1;
+				do {
+					const Frame f = makeFrame(s, 1);
+					Json j;
+					++frames;
+					if (!parse(toJson(f), j) || j.o["page"].n != expectedPage ||
+					    j.o["pages"].n != static_cast<double>(s.programPages().size()) ||
+					    j.o["theme"].s != themeName(theme) || j.o["verses"].a.empty()) {
+						allGood = false;
+						break;
+					}
+					for (const Json &jv : j.o["verses"].a) {
+						const int v = static_cast<int>(jv.o.at("v").n);
+						const bool cont = jv.o.count("k") && jv.o.at("k").b;
+						if (!cont && rebuilt.count(v))
+							allGood = false; // a verse started twice
+						rebuilt[v] += jv.o.at("t").s;
+					}
+					++expectedPage;
+				} while (s.nextPage());
+				if (rebuilt.size() != static_cast<std::size_t>(g_bible.verseCount(book, chapter)))
 					allGood = false;
-				++checkedVerses;
+				for (const auto &[v, text] : rebuilt)
+					if (text != std::string(*g_bible.verse({book, chapter, v})))
+						allGood = false;
+				verses += rebuilt.size();
 			}
 		}
+		CHECK(verses == g_bible.verseCount());
 	}
 	CHECK(allGood);
-	CHECK(checkedVerses == g_bible.verseCount()); // every verse of the Bible went through the JSON
+	CHECK(frames > 3u * 1189u);
 }
 
 void testFrameFollowsTheProgramOnly()
@@ -270,14 +290,14 @@ void testFrameFollowsTheProgramOnly()
 	CHECK(!makeFrame(s, 2).visible);                 // preview alone shows nothing on the air
 	s.takeOnAir();
 	Frame f = makeFrame(s, 3);
-	CHECK(f.visible && f.revision == 3 && f.slide.reference == "Jean 3:16");
+	CHECK(f.visible && f.revision == 3 && f.reference == "Jean 3:16");
 
 	s.showInPreview(resolveQuery("Ps 23", g_bible).passage);
-	CHECK(makeFrame(s, 4).slide.reference == "Jean 3:16"); // preview moved, frame did not
+	CHECK(makeFrame(s, 4).reference == "Jean 3:16"); // preview moved, frame did not
 
 	s.hideProgram();
 	const Frame h = makeFrame(s, 5);
-	CHECK(!h.visible && h.slide.verses.empty());
+	CHECK(!h.visible && h.verses.empty());
 	CHECK(parse(toJson(h), j) && !j.o["visible"].b);
 }
 

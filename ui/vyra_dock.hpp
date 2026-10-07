@@ -22,6 +22,7 @@ class StageController;
 class QLineEdit;
 class QPushButton;
 class QLabel;
+class QComboBox;
 
 namespace vyra::ui {
 
@@ -48,6 +49,7 @@ class PickerPanel;
  *   Enter        passage typed -> PREVIEW
  *   Ctrl+Enter   passage typed (or the one in PREVIEW if the bar is empty) -> PROGRAM, ON AIR
  *   Up / Down    previous / next verse, in PREVIEW only
+ *   PageUp/Down  previous / next PAGE of a long passage on the PROGRAM (the PREVIEW is not touched)
  *   Esc          takes the PROGRAM off the air (the passage stays ready)
  */
 class VyraDock : public QWidget {
@@ -93,6 +95,8 @@ private:
 	const search::Passage *context() const;
 	void setFieldToPreview();
 	void notifyProgram();
+	void changePage(bool forward);
+	void changeTheme(int index);
 
 	const bible::BibleModule *bible_ = nullptr;
 	std::unique_ptr<stage::StageController> stage_;
@@ -111,6 +115,10 @@ private:
 	QPushButton *nextButton_ = nullptr;
 	QPushButton *hideButton_ = nullptr;
 	QPushButton *onAirButton_ = nullptr;
+	QComboBox *themeBox_ = nullptr;
+	QPushButton *pagePreviousButton_ = nullptr;
+	QPushButton *pageNextButton_ = nullptr;
+	QLabel *pageLabel_ = nullptr;
 	QLabel *statusLabel_ = nullptr;
 };
 

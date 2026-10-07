@@ -3,8 +3,10 @@
 
 The page is opened with ?manual=1 (no connection to a server) and frames are fed by hand through
 window.vyraShow. Needs: python3, playwright and a Chromium (PLAYWRIGHT_BROWSERS_PATH).
-Usage: python3 tests/overlay_page_test.py [screenshot_dir]
+Usage: python3 tests/overlay_page_test.py [screenshot_dir] [path to frames_dump]
+(the second argument adds the test of the fullest pages of the whole Bible, for every theme).
 """
+import tempfile
 import io
 import json
 import pathlib
@@ -16,7 +18,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAGE = (ROOT / "data" / "overlay" / "index.html").as_uri() + "?manual=1"
-OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else None
+OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1] else None
+DUMP = sys.argv[2] if len(sys.argv) > 2 else None
 
 failures = 0
 checks = 0
@@ -41,8 +44,9 @@ def load_verses(book, chapter):
     return verses
 
 
-def frame(rev, visible, ref="", verses=()):
-    return {"rev": rev, "visible": visible, "reference": ref, "verses": list(verses)}
+def frame(rev, visible, ref="", verses=(), theme="lower", page=1, pages=1):
+    return {"rev": rev, "visible": visible, "theme": theme, "page": page, "pages": pages, "reference": ref,
+            "verses": list(verses)}
 
 
 def png_pixels(data):
@@ -166,7 +170,8 @@ def main():
         if OUT:
             (OUT / "overlay_range.png").write_bytes(page.screenshot(omit_background=True))
 
-        # 7. A very long passage (Psalm 119): fits, whole verses only, ends with an ellipsis.
+        # 7. Safety net: if a frame is too long anyway (should not happen, pages are cut to fit), whole verses
+        #    are dropped and "..." is added; it still fits, and the slide says so.
         page.evaluate("f => window.vyraShow(f)", frame(4, True, "Psaumes 119", ps119))
         settle()
         check(fits(), "very long passage fits")
@@ -225,6 +230,105 @@ def main():
         page.wait_for_timeout(400)
         check(fits(), "after a resize while on the air, the text fits again")
         check(panel_opacity() == 1, "panel stays visible during a resize")
+
+        # 13. Themes: one panel geometry each, all inside the screen, text fits.
+        page.set_viewport_size({"width": 1920, "height": 1080})
+        page.wait_for_timeout(200)
+        v16 = jn316
+        geometry = {}
+        rev = 12000
+        for theme in ("lower", "full", "minimal"):
+            rev += 1
+            page.evaluate("f => window.vyraShow(f)", frame(rev, True, "Jean 3:16", [v16], theme=theme))
+            page.wait_for_timeout(900)
+            check(page.evaluate("document.getElementById('panel').className.indexOf('theme-%s') >= 0" % theme),
+                  "theme class applied: " + theme)
+            check(panel_opacity() == 1 and fits() and shown_text() == [v16["t"]], "theme shows the verse: " + theme)
+            box = page.evaluate("(() => { const r = document.getElementById('panel').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; })()")
+            geometry[theme] = box
+            check(box[0] >= 0 and box[1] >= 0 and box[2] <= 1920 and box[3] <= 1080, "panel inside the screen: " + theme)
+            shot = page.screenshot(omit_background=True)
+            w, h, rows = png_pixels(shot)
+            check(alpha_at(rows, 3, 3) == (255 if theme == "full" else 0) or theme == "full" and alpha_at(rows, 3, 3) >= 200,
+                  "corner of the screen: opaque only in full screen (%s)" % theme)
+            if OUT:
+                (OUT / ("overlay_theme_%s.png" % theme)).write_bytes(shot)
+        check(geometry["full"][0] == 0 and geometry["full"][3] == 1080, "full screen covers the whole picture")
+        check(geometry["lower"][1] > 540 and geometry["minimal"][1] > 540, "lower and minimal stay in the bottom half")
+
+        # A change of theme on the air: the panel fades out, changes, comes back; no blink to the old geometry.
+        page.evaluate("f => window.vyraShow(f)", frame(12100, True, "Jean 3:16", [v16], theme="lower"))
+        page.wait_for_timeout(900)
+        page.evaluate("f => window.vyraShow(f)", frame(12101, True, "Jean 3:16", [v16], theme="full"))
+        page.wait_for_timeout(100)
+        check(panel_opacity() < 1, "theme change: the panel is fading out")
+        # newer frames arriving during the switch are not lost
+        page.evaluate("f => window.vyraShow(f)", frame(12102, True, "Jean 3:17", [v17], theme="full"))
+        page.wait_for_timeout(1000)
+        check(panel_opacity() == 1 and shown_text() == [v17["t"]], "theme change: the newest frame is the one shown")
+        check(page.evaluate("document.getElementById('panel').className") == "theme-full on" or
+              "theme-full" in page.evaluate("document.getElementById('panel').className"), "theme change applied")
+        check(page.evaluate("document.querySelectorAll('.slide').length") == 1, "theme change: one slide only")
+        # an unknown theme falls back to the lower third
+        page.evaluate("f => window.vyraShow(f)", frame(12103, False))
+        page.wait_for_timeout(700)
+        page.evaluate("f => window.vyraShow(f)", frame(12104, True, "Jean 3:16", [v16], theme="inconnu"))
+        page.wait_for_timeout(700)
+        check("theme-lower" in page.evaluate("document.getElementById('panel').className"), "unknown theme: lower third")
+
+        # 14. Pages: indicator, numbers, continuation pieces without number.
+        piece1 = {"c": 1, "v": 5, "t": "Debut du verset coupe"}
+        piece2 = {"c": 1, "v": 5, "t": "suite du verset coupe", "k": True}
+        page.evaluate("f => window.vyraShow(f)", frame(12200, True, "Psaumes 119", [piece1], page=1, pages=3))
+        page.wait_for_timeout(700)
+        check(page.evaluate("document.querySelector('.slide.shown .ref .page').textContent") == "1/3", "page indicator 1/3")
+        check(page.evaluate("document.querySelectorAll('.slide.shown .text sup').length") == 1, "first piece keeps its number")
+        page.evaluate("f => window.vyraShow(f)", frame(12201, True, "Psaumes 119", [piece2], page=2, pages=3))
+        page.wait_for_timeout(700)
+        check(page.evaluate("document.querySelector('.slide.shown .ref .page').textContent") == "2/3", "page indicator 2/3")
+        check(page.evaluate("document.querySelectorAll('.slide.shown .text sup').length") == 0,
+              "a continuation has no verse number")
+        page.evaluate("f => window.vyraShow(f)", frame(12202, True, "Jean 3:16", [v16]))
+        page.wait_for_timeout(700)
+        check(page.evaluate("document.querySelector('.slide.shown .ref .page')") is None, "no indicator for one page")
+
+        # 15. The fullest pages of the whole Bible, for every theme, must fit without any truncation.
+        if DUMP:
+            frames_file = pathlib.Path(tempfile.mkdtemp()) / "frames.jsonl"
+            import subprocess
+            subprocess.run([DUMP, str(frames_file)], check=True, capture_output=True)
+            frames = [json.loads(l) for l in frames_file.read_text(encoding="utf-8").splitlines()]
+            check(len(frames) > 300, "frames to render: %d" % len(frames))
+            bad = []
+            smallest = {}
+            for size in ((1920, 1080), (1280, 720)):
+                page.set_viewport_size({"width": size[0], "height": size[1]})
+                page.wait_for_timeout(150)
+                rev = 1000000 * size[0]
+                for fr in frames:
+                    rev += 1
+                    fr = dict(fr, rev=rev)
+                    result = page.evaluate("""f => {
+                        document.getElementById('panel').classList.remove('on');
+                        window.vyraShow(f);
+                        return null;
+                    }""", fr)
+                    page.wait_for_timeout(1 if fr["theme"] == "lower" else 1)
+                    # layout is measured at once by the page itself; read what it decided
+                    info = page.evaluate("""() => {
+                        const slides = Array.from(document.querySelectorAll('.slide'));
+                        const s = slides[slides.length - 1];
+                        if (!s) return null;
+                        const t = s.querySelector('.text');
+                        return {truncated: s.getAttribute('data-truncated'), fits: t.scrollHeight <= t.clientHeight + 1,
+                                font: parseFloat(t.style.fontSize)};
+                    }""")
+                    if info:
+                        smallest[fr["theme"]] = min(smallest.get(fr["theme"], 99), info["font"])
+                    if not info or info["truncated"] or not info["fits"]:
+                        bad.append((size, fr["theme"], fr["reference"], fr["page"], info))
+            print("smallest font used on the fullest pages (vh of the screen):", {k: round(v, 2) for k, v in smallest.items()})
+            check(not bad, "pages that do not fit without truncation: %d, first: %s" % (len(bad), bad[:2]))
 
         check(not errors, "no JavaScript error: %s" % errors)
         browser.close()

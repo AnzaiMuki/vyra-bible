@@ -13,6 +13,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QEvent>
 #include <QHBoxLayout>
+#include <QComboBox>
 #include <QLabel>
 #include <QKeyEvent>
 #include <QLineEdit>
@@ -228,6 +229,31 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	buttons->addWidget(onAirButton_);
 	root->addLayout(buttons);
 
+	// Display: theme and pages of the PROGRAM
+	auto *display = new QHBoxLayout();
+	display->setSpacing(6);
+	themeBox_ = new QComboBox(this);
+	themeBox_->setObjectName(QStringLiteral("themeBox"));
+	themeBox_->addItem(text("Theme.Lower"));
+	themeBox_->addItem(text("Theme.Full"));
+	themeBox_->addItem(text("Theme.Minimal"));
+	themeBox_->setToolTip(text("Tooltip.Theme"));
+	themeBox_->setFocusPolicy(Qt::NoFocus);
+	pagePreviousButton_ = new QPushButton(text("Button.PagePrevious"), this);
+	pageNextButton_ = new QPushButton(text("Button.PageNext"), this);
+	pagePreviousButton_->setToolTip(text("Tooltip.PagePrevious"));
+	pageNextButton_->setToolTip(text("Tooltip.PageNext"));
+	pagePreviousButton_->setFocusPolicy(Qt::NoFocus);
+	pageNextButton_->setFocusPolicy(Qt::NoFocus);
+	pageLabel_ = new QLabel(this);
+	pageLabel_->setObjectName(QStringLiteral("pageLabel"));
+	display->addWidget(themeBox_);
+	display->addStretch(1);
+	display->addWidget(pageLabel_);
+	display->addWidget(pagePreviousButton_);
+	display->addWidget(pageNextButton_);
+	root->addLayout(display);
+
 	picker_ = new PickerPanel(bible_, this);
 	picker_->setMinimumHeight(110);
 	root->addWidget(picker_, 1);
@@ -272,6 +298,9 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	connect(nextButton_, &QPushButton::clicked, this, [this] { navigate(true); });
 	connect(hideButton_, &QPushButton::clicked, this, [this] { hideProgram(); });
 	connect(onAirButton_, &QPushButton::clicked, this, [this] { airFromField(); });
+	connect(pagePreviousButton_, &QPushButton::clicked, this, [this] { changePage(false); });
+	connect(pageNextButton_, &QPushButton::clicked, this, [this] { changePage(true); });
+	connect(themeBox_, QOverload<int>::of(&QComboBox::activated), this, [this](int i) { changeTheme(i); });
 
 	searchEdit_->setEnabled(stage_ != nullptr);
 	refresh();
@@ -346,6 +375,27 @@ void VyraDock::navigate(bool forward)
 		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
 		refresh(true);
 	}
+}
+
+void VyraDock::changePage(bool forward)
+{
+	if (!stage_ || !(forward ? stage_->nextPage() : stage_->previousPage()))
+		return;
+	refresh();
+	notifyProgram();
+}
+
+void VyraDock::changeTheme(int index)
+{
+	if (!stage_)
+		return;
+	static const stage::Theme themes[] = {stage::Theme::LowerThird, stage::Theme::FullScreen,
+					      stage::Theme::Minimal};
+	if (index < 0 || index > 2)
+		return;
+	stage_->setTheme(themes[index]);
+	refresh();
+	notifyProgram();
 }
 
 void VyraDock::hideProgram()
@@ -446,6 +496,16 @@ void VyraDock::refresh(bool follow)
 	nextButton_->setEnabled(have && stage_->hasNext());
 	hideButton_->setEnabled(have && stage_->programLive());
 	onAirButton_->setEnabled(have && stage_->preview().has_value());
+	themeBox_->setEnabled(have);
+
+	const std::size_t pages = have ? stage_->programPages().size() : 0;
+	const std::size_t page = have ? stage_->programPage() : 0;
+	const bool live = have && stage_->programLive();
+	pageLabel_->setText(live && pages > 1 ? text("Status.Page").arg(page + 1).arg(pages) : QString());
+	pagePreviousButton_->setEnabled(live && page > 0);
+	pageNextButton_->setEnabled(live && page + 1 < pages);
+	pagePreviousButton_->setVisible(pages > 1);
+	pageNextButton_->setVisible(pages > 1);
 }
 
 bool VyraDock::eventFilter(QObject *watched, QEvent *event)
@@ -469,6 +529,13 @@ bool VyraDock::eventFilter(QObject *watched, QEvent *event)
 	case Qt::Key_Down:
 		if (plain && stage_->preview()) {
 			navigate(key->key() == Qt::Key_Down);
+			return true;
+		}
+		break;
+	case Qt::Key_PageUp:
+	case Qt::Key_PageDown:
+		if (plain && stage_->programLive()) {
+			changePage(key->key() == Qt::Key_PageDown);
 			return true;
 		}
 		break;

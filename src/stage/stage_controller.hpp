@@ -15,6 +15,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
  *   - Only takeOnAir() changes what is on the PROGRAM: it copies the preview to the program.
  *   - hideProgram() takes the passage off the air but keeps it, so it can be put back with takeOnAir().
  *   - Preview and Program are never changed by a failed operation.
+ *   - A long passage on the program is cut in pages (paginate); nextPage/previousPage move the PROGRAM
+ *     only, on purpose and one page at a time. Putting a passage on the air always starts at page 1.
+ *   - Changing the theme re-cuts the pages of the program, so the program goes back to page 1.
  */
 
 #include <optional>
@@ -23,20 +26,18 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "src/bible/bible_module.hpp"
 #include "src/search/passage_query.hpp"
+#include "src/stage/paginator.hpp"
+#include "src/stage/slide.hpp"
 
 namespace vyra::stage {
 
-struct SlideVerse {
-	int chapter = 0;
-	int verse = 0;
-	std::string text;
-};
+/** How the passage is drawn on the air. Chosen by the operator; changing it never changes what is on the air. */
+enum class Theme { LowerThird, FullScreen, Minimal };
 
-/** Everything needed to draw a passage: its printed reference and its verses, in reading order. */
-struct Slide {
-	std::string reference;
-	std::vector<SlideVerse> verses;
-};
+/** Name used on the wire and in the overlay page: "lower", "full", "minimal". */
+const char *themeName(Theme theme);
+/** Characters that fit one screen of the theme (the overlay then shrinks the font to fit exactly). */
+std::size_t pageBudget(Theme theme);
 
 class StageController {
 public:
@@ -65,11 +66,28 @@ public:
 
 	Slide slide(const search::Passage &passage) const;
 
+	const bible::BibleModule &module() const { return module_; }
+	Theme theme() const { return theme_; }
+	/** Sets the theme of the display. Re-cuts the program's pages (back to page 1). */
+	void setTheme(Theme theme);
+
+	/** Pages of the passage held by the program (empty if none). */
+	const std::vector<Page> &programPages() const { return programPages_; }
+	/** 0-based index of the page shown. */
+	std::size_t programPage() const { return programPage_; }
+	bool nextPage();     // false if not live or already on the last page
+	bool previousPage(); // false if not live or already on the first page
+
 private:
 	std::optional<bible::Reference> verseAfterPreview() const;
 	std::optional<bible::Reference> verseBeforePreview() const;
 
+	void repaginate();
+
 	const bible::BibleModule &module_;
+	Theme theme_ = Theme::LowerThird;
+	std::vector<Page> programPages_;
+	std::size_t programPage_ = 0;
 	std::optional<search::Passage> preview_;
 	std::optional<search::Passage> program_;
 	bool programVisible_ = false;
