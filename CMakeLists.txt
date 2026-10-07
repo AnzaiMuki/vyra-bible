@@ -54,6 +54,8 @@ target_sources(
     src/search/passage_query.hpp
     src/stage/stage_controller.cpp
     src/stage/stage_controller.hpp
+    ui/picker_panel.cpp
+    ui/picker_panel.hpp
     ui/stage_panel.cpp
     ui/stage_panel.hpp
     ui/vyra_dock.cpp

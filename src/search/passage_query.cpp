@@ -195,23 +195,9 @@ QueryResult checkVerse(const BibleModule &module, int book, int chapter, int ver
 	return make(QueryStatus::Ok, book);
 }
 
-} // namespace
-
-QueryResult resolveQuery(std::string_view query, const BibleModule &module)
+// From the first token after the book name to the end: chapter, verse and ranges, checked against the module.
+QueryResult resolveNumbers(const std::vector<Token> &tokens, std::size_t next, int book, const BibleModule &module)
 {
-	if (query.size() > kMaxQueryBytes)
-		return make(QueryStatus::Syntax);
-
-	const std::vector<Token> tokens = tokenize(normalizeText(query));
-	if (tokens.empty())
-		return make(QueryStatus::Empty);
-
-	std::size_t next = 0;
-	QueryResult bookResult = parseBook(tokens, next);
-	if (bookResult.status != QueryStatus::Ok)
-		return bookResult;
-	const int book = bookResult.book;
-
 	const int chapters = module.chapterCount(book);
 	if (chapters == 0)
 		return make(QueryStatus::BookNotInModule, book);
@@ -334,6 +320,80 @@ QueryResult resolveQuery(std::string_view query, const BibleModule &module)
 	QueryResult ok = make(QueryStatus::Ok, book);
 	ok.passage = p;
 	return ok;
+}
+
+
+} // namespace
+
+namespace {
+
+// "17", "17-19", ":17", "v17" and "3:16", "3 16", "3:16-18" with nothing but numbers and separators:
+// the book is the one of the context.
+bool isRelative(const std::vector<Token> &tokens)
+{
+	bool number = false;
+	for (const Token &t : tokens) {
+		if (t.kind == TokenKind::Number)
+			number = true;
+		else if (t.kind == TokenKind::Punct)
+			continue;
+		else if (!(isChapterFiller(t.text) || isVerseWord(t.text) || isRangeWord(t.text)))
+			return false;
+	}
+	return number;
+}
+
+} // namespace
+
+QueryResult resolveQuery(std::string_view query, const BibleModule &module, const Passage *context)
+{
+	if (query.size() > kMaxQueryBytes)
+		return make(QueryStatus::Syntax);
+
+	std::vector<Token> tokens = tokenize(normalizeText(query));
+	if (tokens.empty())
+		return make(QueryStatus::Empty);
+
+	// Shorthand relative to the passage being read: "17" is verse 17 of the same chapter.
+	if (context && context->book >= 1 && isRelative(tokens)) {
+		// A leading verse separator (":17", "v17") only says "a verse".
+		while (!tokens.empty() && ((tokens.front().kind == TokenKind::Punct && tokens.front().text != "-" &&
+					    tokens.front().text != ";") ||
+					   (tokens.front().kind == TokenKind::Word && isVerseWord(tokens.front().text))))
+			tokens.erase(tokens.begin());
+		if (tokens.empty())
+			return make(QueryStatus::Incomplete, context->book);
+
+		int numbers = 0;
+		bool verseSeparator = false;
+		bool range = false;
+		for (const Token &t : tokens) {
+			if (t.kind == TokenKind::Number)
+				++numbers;
+			else if ((t.kind == TokenKind::Punct && t.text != "-" && t.text != ";") ||
+				 (t.kind == TokenKind::Word && isVerseWord(t.text)))
+				verseSeparator = true;
+			else if (t.text == "-" || (t.kind == TokenKind::Word && isRangeWord(t.text)))
+				range = true;
+		}
+		// One number, or two joined by a range ("17-19"): verses of the chapter being read.
+		if (numbers == 1 || (numbers == 2 && range && !verseSeparator)) {
+			Token chapter;
+			chapter.kind = TokenKind::Number;
+			chapter.text = std::to_string(context->endChapter);
+			Token colon;
+			colon.kind = TokenKind::Punct;
+			colon.text = ":";
+			tokens.insert(tokens.begin(), {chapter, colon});
+		}
+		return resolveNumbers(tokens, 0, context->book, module);
+	}
+
+	std::size_t next = 0;
+	QueryResult bookResult = parseBook(tokens, next);
+	if (bookResult.status != QueryStatus::Ok)
+		return bookResult;
+	return resolveNumbers(tokens, next, bookResult.book, module);
 }
 
 std::vector<Reference> passageVerses(const Passage &p, const BibleModule &module)

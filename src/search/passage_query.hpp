@@ -70,8 +70,17 @@ struct QueryResult {
 	}
 };
 
-/** Understands @p query and checks it against @p module. Never throws; any text is accepted as input. */
-QueryResult resolveQuery(std::string_view query, const bible::BibleModule &module);
+/**
+ * Understands @p query and checks it against @p module. Never throws; any text is accepted as input.
+ *
+ * @p context is the passage being read (the Preview), for the shorthand used while following a reading:
+ *   17        verse 17 of the chapter of the context (its end chapter)
+ *   17-19     verses 17 to 19 of that chapter        :17  v17   the same as 17
+ *   4:1       chapter 4 verse 1 of the book of the context       4 1    the same
+ * A query that names a book ("Jn 17") is never relative. Without a context, a query that is only
+ * numbers is not understood (Syntax).
+ */
+QueryResult resolveQuery(std::string_view query, const bible::BibleModule &module, const Passage *context = nullptr);
 
 /** Every verse of a passage, in reading order. */
 std::vector<bible::Reference> passageVerses(const Passage &passage, const bible::BibleModule &module);

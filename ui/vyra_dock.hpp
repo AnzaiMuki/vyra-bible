@@ -10,12 +10,11 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <functional>
 #include <memory>
+#include <optional>
 
+#include "src/bible/bible_module.hpp"
 #include "src/search/passage_query.hpp"
 
-namespace vyra::bible {
-class BibleModule;
-}
 namespace vyra::stage {
 class StageController;
 }
@@ -27,6 +26,7 @@ class QLabel;
 namespace vyra::ui {
 
 class StagePanel;
+class PickerPanel;
 
 /**
  * The operator dock, laid out as a control room:
@@ -38,6 +38,11 @@ class StagePanel;
  *
  * Milestone 04: the search bar is live. It only translates what the operator does into calls to
  * StageController (which holds all the rules) and displays the result.
+ *
+ * Quick selection (typing): after "Jn 3:16", typing just "17" and Enter gives Jean 3:17; "17-19", "4:1" too.
+ * After every send the search bar is selected, so the next number replaces the previous one.
+ * Quick selection (mouse): the Books / Chapters / Verses picker under the buttons.
+ *   click a verse = PREVIEW, Shift+click = range from the last verse, Ctrl+click or double-click = ON AIR.
  *
  * Keys, while the search bar has the focus:
  *   Enter        passage typed -> PREVIEW
@@ -75,7 +80,10 @@ private:
 	void airFromField();
 	void navigate(bool forward);
 	void hideProgram();
-	void refresh();
+	void refresh(bool follow = false);
+	void pickVerse(int book, int chapter, int verse, bool extend, bool onAir);
+	void setFieldText(const QString &text, bool selectAll, bool report = false);
+	const search::Passage *context() const;
 	void setFieldToPreview();
 	void notifyProgram();
 
@@ -86,6 +94,8 @@ private:
 	ProgramListener programListener_;
 
 	QLineEdit *searchEdit_ = nullptr;
+	PickerPanel *picker_ = nullptr;
+	std::optional<bible::Reference> anchor_; // last verse clicked in the picker, for Shift+click ranges
 	StagePanel *preview_ = nullptr;
 	StagePanel *program_ = nullptr;
 	QPushButton *previousButton_ = nullptr;

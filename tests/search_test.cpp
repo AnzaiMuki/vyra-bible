@@ -99,6 +99,22 @@ void testCatalog()
 	CHECK(catalogAliasCount() > 300);
 
 	CHECK(frenchBookName(1) == "Genèse" && frenchBookName(43) == "Jean" && frenchBookName(66) == "Apocalypse");
+	// The short form used by the book picker: short, unique, and it finds its own book.
+	{
+		std::set<std::string> shorts;
+		for (int b = 1; b <= kBookCount; ++b) {
+			const std::string name(shortBookName(b));
+			CHECK(!name.empty() && name.size() <= 6);
+			CHECK(shorts.insert(name).second);
+			std::string key;
+			for (const char c : normalizeText(name))
+				if (c != ' ' && c != '.')
+					key += c;
+			CHECK(findBookExact(key) == b);
+		}
+		CHECK(shortBookName(0).empty() && shortBookName(67).empty());
+		CHECK(shortBookName(1) == "Ge" && shortBookName(46) == "1 Co" && shortBookName(66) == "Ap");
+	}
 	CHECK(englishBookName(1) == "Genesis" && englishBookName(43) == "John" && englishBookName(66) == "Revelation");
 	CHECK(frenchBookName(0).empty() && frenchBookName(67).empty() && englishBookName(-1).empty());
 
@@ -492,6 +508,114 @@ void testSegondCrossReferences()
 
 // ---------- completion ----------
 
+// ---------- shorthand relative to the passage being read ----------
+
+// With a context, "<query>" must resolve to book b from (sc:sv) to (ec:ev).
+void expectRelative(const Passage &context, const std::string &query, int b, int sc, int sv, int ec, int ev)
+{
+	const QueryResult r = resolveQuery(query, g_bible, &context);
+	++vyra::testing::checks();
+	const Passage &p = r.passage;
+	if (!r.ok() || p.book != b || p.startChapter != sc || p.startVerse != sv || p.endChapter != ec ||
+	    p.endVerse != ev) {
+		++vyra::testing::failures();
+		std::printf("FAIL relative '%s': got %s %d %d:%d-%d:%d, expected %d %d:%d-%d:%d\n", query.c_str(),
+			    statusName(r.status), p.book, p.startChapter, p.startVerse, p.endChapter, p.endVerse, b, sc,
+			    sv, ec, ev);
+	}
+}
+
+void expectRelativeStatus(const Passage &context, const std::string &query, QueryStatus status, int limit = -1)
+{
+	const QueryResult r = resolveQuery(query, g_bible, &context);
+	++vyra::testing::checks();
+	if (r.status != status || (limit >= 0 && r.limit != limit)) {
+		++vyra::testing::failures();
+		std::printf("FAIL relative '%s': got %s (limit %d), expected %s (limit %d)\n", query.c_str(),
+			    statusName(r.status), r.limit, statusName(status), limit);
+	}
+}
+
+void testRelativeQueries()
+{
+	const Passage jn316{43, 3, 16, 3, 16};
+
+	// A number alone is a verse of the chapter being read.
+	for (const char *q : {"17", " 17 ", ":17", "v17", "v 17", "verset 17", ".17", ",17"})
+		expectRelative(jn316, q, 43, 3, 17, 3, 17);
+	expectRelative(jn316, "1", 43, 3, 1, 3, 1);
+	expectRelative(jn316, "36", 43, 3, 36, 3, 36);
+
+	// Two numbers joined by a range: verses of that chapter.
+	for (const char *q : {"17-19", "17 - 19", "17\xE2\x80\x93" "19", "17 a 19", "17 \xC3\xA0 19", "17 to 19"})
+		expectRelative(jn316, q, 43, 3, 17, 3, 19);
+
+	// Chapter and verse, with any separator: same book as the context.
+	for (const char *q : {"4:1", "4.1", "4,1", "4 1", "4v1", "4 verset 1"})
+		expectRelative(jn316, q, 43, 4, 1, 4, 1);
+	expectRelative(jn316, "4:1-3", 43, 4, 1, 4, 3);
+	expectRelative(jn316, "3:36-4:2", 43, 3, 36, 4, 2);
+
+	// A context that is a range or a whole chapter: the chapter where it ends.
+	expectRelative(Passage{43, 3, 36, 4, 2}, "5", 43, 4, 5, 4, 5);
+	expectRelative(Passage{19, 23, 1, 23, 6}, "4", 19, 23, 4, 23, 4);
+
+	// Books of one chapter: the number is a verse of chapter 1.
+	expectRelative(Passage{65, 1, 3, 1, 3}, "5", 65, 1, 5, 1, 5);
+	expectRelative(Passage{65, 1, 3, 1, 3}, "5-7", 65, 1, 5, 1, 7);
+
+	// Errors say what is wrong.
+	expectRelativeStatus(jn316, "37", QueryStatus::VerseOutOfRange, 36);
+	expectRelativeStatus(jn316, "99:1", QueryStatus::ChapterOutOfRange, 21);
+	expectRelativeStatus(jn316, "19-17", QueryStatus::ReversedRange);
+	expectRelativeStatus(jn316, "0", QueryStatus::VerseOutOfRange, 36);
+	expectRelativeStatus(jn316, "17;19", QueryStatus::Unsupported);
+	expectRelativeStatus(jn316, "17-", QueryStatus::Incomplete);
+	expectRelativeStatus(jn316, ":", QueryStatus::Syntax); // no number: not a shorthand
+	expectRelativeStatus(jn316, "", QueryStatus::Empty);
+
+	// A query that names a book is never relative, and means what it always meant.
+	expectRelative(jn316, "Jn 17", 43, 17, 1, 17, 26);
+	expectRelative(jn316, "Ps 23", 19, 23, 1, 23, 6);
+	expectRelative(jn316, "1 Co 13:4", 46, 13, 4, 13, 4);
+	expectRelativeStatus(jn316, "Jn", QueryStatus::NeedChapter);
+	expectRelativeStatus(jn316, "xyz 3", QueryStatus::UnknownBook);
+
+	// Without a context, numbers alone are not understood (nothing is guessed).
+	expectStatus("17", QueryStatus::Syntax);
+	expectStatus("4:1", QueryStatus::Syntax);
+	expectStatus(":17", QueryStatus::Syntax);
+	// An empty or invalid context is ignored.
+	const Passage none{};
+	expectRelativeStatus(none, "17", QueryStatus::Syntax);
+	expectRelative(none, "Jn 3:16", 43, 3, 16, 3, 16);
+
+	// Following a reading, verse after verse, never leaves the book and chapter.
+	Passage reading = jn316;
+	for (int v = 1; v <= 36; ++v) {
+		const QueryResult r = resolveQuery(std::to_string(v), g_bible, &reading);
+		CHECK(r.ok() && r.passage.book == 43 && r.passage.startChapter == 3 && r.passage.startVerse == v);
+		reading = r.passage;
+	}
+	// And the shorthand reaches every verse of the Bible exactly as the full form does.
+	std::size_t checked = 0;
+	bool all = true;
+	for (int book = 1; book <= kBookCount; ++book) {
+		for (int chapter = 1; chapter <= g_bible.chapterCount(book); ++chapter) {
+			const Passage ctx{book, chapter, 1, chapter, 1};
+			for (int verse = 1; verse <= g_bible.verseCount(book, chapter); ++verse) {
+				const QueryResult r = resolveQuery(std::to_string(verse), g_bible, &ctx);
+				if (!r.ok() || r.passage.book != book || r.passage.startChapter != chapter ||
+				    r.passage.startVerse != verse || r.passage.endVerse != verse)
+					all = false;
+				++checked;
+			}
+		}
+	}
+	CHECK(all);
+	CHECK(checked == g_bible.verseCount());
+}
+
 void testSuggestions()
 {
 	auto has = [](const std::vector<int> &v, int b) {
@@ -601,6 +725,7 @@ int main()
 	testPassageVersesAndFormat();
 	testRoundTripWholeBible();
 	testSegondCrossReferences();
+	testRelativeQueries();
 	testSuggestions();
 	testGarbageNeverCrashes();
 	testSpeed();

@@ -39,6 +39,7 @@ Résultat : `release\VYRA-Bible-Setup-<version>.exe`.
 | `src/overlay/overlay_server.*` | Serveur local 127.0.0.1 (Qt Network) : page, `/state`, `/events` |
 | `data/overlay/` | La page HTML/CSS/JS affichée par la Browser Source d'OBS |
 | `ui/vyra_dock.*` | Dock opérateur : traduit clavier et clics en appels au contrôleur |
+| `ui/picker_panel.*` | Sélecteur Livres, Chapitres, Versets à la souris (ne décide rien : il signale les clics) |
 | `ui/stage_panel.*` | Écran 16:9 PREVIEW / PROGRAM |
 | `data/locale/` | Textes fr-FR et en-US |
 | `data/bibles/` | Bibles embarquées (installées avec le plugin) |
@@ -62,10 +63,10 @@ Ils demandent un compilateur C++17 et CMake ; les tests du serveur (`overlay_ser
 
 Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte les erreurs de syntaxe et d'API, pas les erreurs d'exécution dans OBS. Le chargement dans OBS se teste uniquement sur Windows : démarrez OBS, ouvrez le journal (Aide > Fichiers journaux) et cherchez `[vyra-bible] dock registered`.
 
-## Checklist de test (sur Windows, jusqu'au Milestone 05)
+## Checklist de test (sur Windows, jusqu'au Milestone 05 (et la sélection rapide))
 
 1. Le build se termine sans erreur.
-2. OBS démarre ; le journal contient `[vyra-bible] loading (version 0.5.0)` puis `dock registered`.
+2. OBS démarre ; le journal contient `[vyra-bible] loading (version 0.5.1)` puis `dock registered`.
 3. Menu Docks > VYRA Bible : le dock s'affiche avec Preview et Program en 16:9.
 4. Redimensionner le dock : les écrans gardent leur ratio.
 5. Le journal contient `Bible loaded: Louis Segond 1910 (LSG1910), 31170 verses` et le bas du dock affiche « Louis Segond 1910 chargée (31170 versets) ».
@@ -81,3 +82,6 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 15. Dans OBS : Sources > + > Navigateur. URL = l'adresse affichée, largeur 1920, hauteur 1080, rien d'autre à changer (voir `docs/OVERLAY.md`). Le fond doit être transparent dans l'aperçu OBS.
 16. Dans le dock : Ctrl+Entrée sur `Jn 3:16` : le lower third apparaît dans OBS avec un fondu. Entrée sur `Jn 3:17` ne change rien à l'écran d'OBS ; Ctrl+Entrée le remplace sans clignoter.
 17. Échap : le lower third disparaît. Fermer puis rouvrir la source navigateur : elle affiche tout de suite l'état courant.
+18. Taper `Jn 3:16` + Entrée, puis `17` + Entrée : Jean 3:17 en Preview, sans retaper le livre. Le champ est sélectionné après chaque envoi.
+19. Taper `19-21`, puis `4:1` : Jean 3:19–21, puis Jean 4:1.
+20. Sélecteur : cliquer Jn dans Livres, 3 dans Chapitres, 16 dans Versets : Preview. Maj+clic sur 18 : plage 16 à 18. Ctrl+clic ou double-clic sur un verset : ON AIR (cellule rouge).

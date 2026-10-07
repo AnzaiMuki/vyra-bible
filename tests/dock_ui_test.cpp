@@ -15,6 +15,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <QLineEdit>
 #include <QMap>
 #include <QPushButton>
+#include <QToolButton>
 #include <QTextStream>
 #include <QtTest/QtTest>
 #include <cstdio>
@@ -89,6 +90,71 @@ int main(int c,char**v){QApplication app(c,v);
   CHECK(status(d).startsWith("EN DIRECT : Psaumes 119"));
   edit->clear(); QTest::keyClicks(edit,"Jn 3:16-18"); QTest::keyClick(edit,Qt::Key_Return);
   d.resize(420,420); app.processEvents(); if(out) d.grab().save(QString("%1/m04_live.png").arg(out));
+ }
+
+ { // quick selection by typing: the number alone follows the reading
+  vyra::ui::VyraDock d(&bible); d.resize(420,420); d.show(); app.processEvents();
+  auto *edit=d.findChild<QLineEdit*>();
+  auto previewText=[&]{ return contents(d)[0]->text(); };
+  auto liveText=[&]{ return contents(d)[1]->text(); };
+  QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(edit->text()=="Jean 3:16" && edit->selectedText()=="Jean 3:16");   // selected: the next number replaces it
+  QTest::keyClicks(edit,"17"); CHECK(status(d).startsWith("Jean 3:17 (1 versets)"));
+  QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(previewText().contains("Jean 3:17") && edit->text()=="Jean 3:17" && edit->selectedText()=="Jean 3:17");
+  QTest::keyClicks(edit,"19-21"); QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(previewText().contains("Jean 3:19\xE2\x80\x93" "21"));
+  QTest::keyClicks(edit,"4:1"); QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(previewText().contains("Jean 4:1") && !previewText().contains("Jean 4:19"));
+  QTest::keyClicks(edit,"5"); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);   // straight on the air
+  CHECK(liveText().contains("Jean 4:5") && edit->text()=="Jean 4:5");
+  // an impossible number changes nothing and says why
+  QTest::keyClicks(edit,"99"); CHECK(status(d).contains("n'a que 54 versets"));
+  QTest::keyClick(edit,Qt::Key_Return); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
+  CHECK(previewText().contains("Jean 4:5") && liveText().contains("Jean 4:5"));
+  // the picker followed: chapter 4 of John, verse 5 is the preview and the live one
+  auto*v5=d.findChild<QToolButton*>("verse-5"); CHECK(v5 && v5->property("preview").toBool() && v5->property("live").toBool());
+  CHECK(d.findChild<QToolButton*>("verse-54") && !d.findChild<QToolButton*>("verse-55"));
+ }
+ { // quick selection by mouse: Books -> Chapters -> Verses
+  vyra::ui::VyraDock d(&bible); d.resize(420,420); d.show(); app.processEvents();
+  auto *edit=d.findChild<QLineEdit*>();
+  int heard=0; bool live=false; d.setProgramListener([&](const vyra::stage::StageController&c){++heard; live=c.programLive();});
+  auto cell=[&](const char*n){ auto*b=d.findChild<QToolButton*>(n); CHECK(b!=nullptr); return b; };
+  CHECK(!d.findChild<QToolButton*>("chapter-1"));                     // nothing to pick before a book
+  QTest::mouseClick(cell("book-43"),Qt::LeftButton);
+  CHECK(edit->text()=="Jean " && status(d).contains("tapez le chapitre"));
+  CHECK(cell("chapter-21") && !d.findChild<QToolButton*>("chapter-22"));
+  QTest::mouseClick(cell("chapter-3"),Qt::LeftButton);
+  CHECK(edit->text()=="Jean 3:");
+  CHECK(cell("verse-36") && !d.findChild<QToolButton*>("verse-37"));
+  CHECK(contents(d)[0]->isHidden() || !contents(d)[0]->text().contains("Jean"));   // choosing a chapter previews nothing yet
+  QTest::mouseClick(cell("verse-16"),Qt::LeftButton);
+  CHECK(contents(d)[0]->text().contains("Jean 3:16") && edit->text()=="Jean 3:16");
+  CHECK(cell("verse-16")->property("preview").toBool() && !cell("verse-17")->property("preview").toBool());
+  CHECK(heard==1);                                                    // clicking previews only: the live screen is untouched
+  QTest::mouseClick(cell("verse-18"),Qt::LeftButton,Qt::ShiftModifier);
+  CHECK(contents(d)[0]->text().contains("Jean 3:16\xE2\x80\x93" "18"));
+  for(int v=16;v<=18;++v) CHECK(cell(QString("verse-%1").arg(v).toUtf8().constData())->property("preview").toBool());
+  CHECK(!cell("verse-19")->property("preview").toBool());
+  QTest::mouseClick(cell("verse-20"),Qt::LeftButton,Qt::ControlModifier);       // Ctrl+click: on the air
+  CHECK(heard==2 && live && contents(d)[1]->text().contains("Jean 3:20"));
+  CHECK(cell("verse-20")->property("live").toBool() && cell("verse-20")->property("preview").toBool());
+  QTest::mouseDClick(cell("verse-25"),Qt::LeftButton);                          // double-click: on the air
+  CHECK(contents(d)[1]->text().contains("Jean 3:25"));
+  CHECK(!cell("verse-20")->property("live").toBool() && cell("verse-25")->property("live").toBool());
+  // a shift+click with no anchor in this chapter is a plain click
+  QTest::mouseClick(cell("chapter-3"),Qt::LeftButton);
+  QTest::mouseClick(cell("book-19"),Qt::LeftButton); QTest::mouseClick(cell("chapter-23"),Qt::LeftButton);
+  QTest::mouseClick(cell("verse-4"),Qt::LeftButton,Qt::ShiftModifier);
+  CHECK(contents(d)[0]->text().contains("Psaumes 23:4") && !contents(d)[0]->text().contains("Psaumes 23:4\xE2"));
+  // typing after a picker click follows the picked chapter
+  QTest::keyClicks(edit,"5"); QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(contents(d)[0]->text().contains("Psaumes 23:5"));
+  // the picker moves with typed passages too
+  QTest::keyClicks(edit,"Ap 22:21"); QTest::keyClick(edit,Qt::Key_Return);
+  CHECK(cell("verse-21")->property("preview").toBool() && !d.findChild<QToolButton*>("verse-22"));
+  if(out) d.grab().save(QString("%1/m05b_picker.png").arg(out));
  }
  { vyra::ui::VyraDock d(nullptr); d.show(); app.processEvents(); auto*e=d.findChild<QLineEdit*>();
    CHECK(!e->isEnabled()); for(int i=0;i<4;++i) CHECK(!btn(d,i)->isEnabled()); }

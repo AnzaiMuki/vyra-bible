@@ -9,6 +9,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <obs-module.h>
 #include <plugin-support.h>
 
+#include <algorithm>
+
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -21,6 +23,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include "src/bible/bible_module.hpp"
 #include "src/search/book_catalog.hpp"
 #include "src/stage/stage_controller.hpp"
+#include "ui/picker_panel.hpp"
 #include "ui/stage_panel.hpp"
 
 namespace vyra::ui {
@@ -55,6 +58,37 @@ constexpr const char *kStyleSheet = R"(
 }
 #onAirButton:enabled {
 	background-color: #d92d20;
+	color: #ffffff;
+}
+#pickerPanel QPushButton {
+	color: palette(text);
+	border: none;
+	border-bottom: 2px solid transparent;
+	padding: 2px 8px;
+}
+#pickerPanel QPushButton:checked {
+	font-weight: 700;
+	border-bottom: 2px solid #d6a84a;
+}
+#pickerPanel QPushButton:disabled {
+	color: palette(midlight);
+}
+#pickerPanel QToolButton {
+	border: 1px solid palette(mid);
+	border-radius: 2px;
+	font-size: 11px;
+}
+#pickerPanel QToolButton:disabled {
+	color: palette(midlight);
+}
+#pickerPanel QToolButton[preview="true"] {
+	background-color: #1f3b63;
+	border-color: #4c8dff;
+	color: #ffffff;
+}
+#pickerPanel QToolButton[live="true"] {
+	background-color: #d92d20;
+	border-color: #f04438;
 	color: #ffffff;
 }
 #dockStatus {
@@ -194,13 +228,33 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	buttons->addWidget(onAirButton_);
 	root->addLayout(buttons);
 
-	root->addStretch(1);
+	picker_ = new PickerPanel(bible_, this);
+	picker_->setMinimumHeight(110);
+	root->addWidget(picker_, 1);
 
 	statusLabel_ = new QLabel(this);
 	statusLabel_->setObjectName(QStringLiteral("dockStatus"));
 	statusLabel_->setWordWrap(true);
 	root->addWidget(statusLabel_);
 
+	connect(picker_, &PickerPanel::bookChosen, this, [this](int book) {
+		if (!stage_)
+			return;
+		const std::string name(search::frenchBookName(book));
+		picker_->showChapters(book);
+		setFieldText(fromStd(name) + QLatin1Char(' '), false, true);
+	});
+	connect(picker_, &PickerPanel::chapterChosen, this, [this](int book, int chapter) {
+		if (!stage_)
+			return;
+		picker_->showVerses(book, chapter);
+		setFieldText(fromStd(std::string(search::frenchBookName(book))) + QLatin1Char(' ') +
+				     QString::number(chapter) + QLatin1Char(':'),
+			     false, true);
+	});
+	connect(picker_, &PickerPanel::verseChosen, this, [this](int book, int chapter, int verse, bool extend, bool onAir) {
+		pickVerse(book, chapter, verse, extend, onAir);
+	});
 	connect(searchEdit_, &QLineEdit::textChanged, this, [this] { onQueryChanged(); });
 	connect(previousButton_, &QPushButton::clicked, this, [this] { navigate(false); });
 	connect(nextButton_, &QPushButton::clicked, this, [this] { navigate(true); });
@@ -230,7 +284,7 @@ void VyraDock::onQueryChanged()
 {
 	if (syncingField_ || !bible_)
 		return;
-	query_ = search::resolveQuery(searchEdit_->text().toUtf8().toStdString(), *bible_);
+	query_ = search::resolveQuery(searchEdit_->text().toUtf8().toStdString(), *bible_, context());
 	bool isError = false;
 	const QString message = describeQuery(query_, *bible_, isError);
 	setStatus(message, isError);
@@ -241,8 +295,9 @@ void VyraDock::previewFromField()
 	if (!stage_ || !query_.ok())
 		return;
 	if (stage_->showInPreview(query_.passage)) {
-		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(query_.passage, *bible_))), false);
-		refresh();
+		setFieldToPreview();
+		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
+		refresh(true);
 	}
 }
 
@@ -259,7 +314,7 @@ void VyraDock::airFromField()
 	if (stage_->takeOnAir()) {
 		setStatus(text("Status.OnAir").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
 		setFieldToPreview();
-		refresh();
+		refresh(true);
 		notifyProgram();
 	}
 }
@@ -271,7 +326,7 @@ void VyraDock::navigate(bool forward)
 	if (forward ? stage_->previewNext() : stage_->previewPrevious()) {
 		setFieldToPreview();
 		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
-		refresh();
+		refresh(true);
 	}
 }
 
@@ -284,18 +339,64 @@ void VyraDock::hideProgram()
 	}
 }
 
-/** Keeps the search bar equal to the preview, so that Ctrl+Enter always airs what the operator sees. */
+const search::Passage *VyraDock::context() const
+{
+	return stage_ && stage_->preview() ? &*stage_->preview() : nullptr;
+}
+
+/** Sets the search bar without reacting to it as if the operator had typed. */
+void VyraDock::setFieldText(const QString &value, bool selectAll, bool report)
+{
+	syncingField_ = true;
+	searchEdit_->setText(value);
+	if (selectAll)
+		searchEdit_->selectAll();
+	syncingField_ = false;
+	if (bible_)
+		query_ = search::resolveQuery(value.toUtf8().toStdString(), *bible_, context());
+	if (report && bible_) {
+		bool isError = false;
+		const QString message = describeQuery(query_, *bible_, isError);
+		setStatus(message, isError);
+	}
+}
+
+/**
+ * Keeps the search bar equal to the preview, so that Ctrl+Enter always airs what the operator sees.
+ * The text is selected: the next number typed replaces it ("Jean 3:17" selected, "18" typed, Jean 3:18).
+ */
 void VyraDock::setFieldToPreview()
 {
 	if (!stage_ || !stage_->preview())
 		return;
-	syncingField_ = true;
-	searchEdit_->setText(fromStd(search::formatPassage(*stage_->preview(), *bible_)));
-	syncingField_ = false;
-	query_ = search::resolveQuery(searchEdit_->text().toUtf8().toStdString(), *bible_);
+	setFieldText(fromStd(search::formatPassage(*stage_->preview(), *bible_)), true);
 }
 
-void VyraDock::refresh()
+void VyraDock::pickVerse(int book, int chapter, int verse, bool extend, bool onAir)
+{
+	if (!stage_)
+		return;
+	search::Passage passage{book, chapter, verse, chapter, verse};
+	if (extend && anchor_ && anchor_->book == book && anchor_->chapter == chapter) {
+		passage.startVerse = std::min(anchor_->verse, verse);
+		passage.endVerse = std::max(anchor_->verse, verse);
+	} else if (!extend) {
+		anchor_ = bible::Reference{book, chapter, verse};
+	}
+	if (!stage_->showInPreview(passage))
+		return;
+	setFieldToPreview();
+	if (onAir && stage_->takeOnAir()) {
+		setStatus(text("Status.OnAir").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
+		refresh(true);
+		notifyProgram();
+		return;
+	}
+	setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
+	refresh(true);
+}
+
+void VyraDock::refresh(bool follow)
 {
 	const bool have = stage_ != nullptr;
 
@@ -314,6 +415,13 @@ void VyraDock::refresh()
 	} else {
 		program_->setCaption(text("Stage.Program.Empty"));
 		program_->setLive(false);
+	}
+
+	if (have) {
+		std::optional<search::Passage> live;
+		if (stage_->programLive())
+			live = stage_->program();
+		picker_->setPosition(stage_->preview(), live, follow);
 	}
 
 	previousButton_->setEnabled(have && stage_->hasPrevious());

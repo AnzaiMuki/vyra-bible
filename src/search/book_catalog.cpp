@@ -291,6 +291,14 @@ std::string_view frenchBookName(int book)
 	return kBooks[static_cast<std::size_t>(book) - 1].french;
 }
 
+std::string_view shortBookName(int book)
+{
+	if (book < 1 || book > static_cast<int>(kBooks.size()))
+		return {};
+	std::string_view aliases = kBooks[static_cast<std::size_t>(book) - 1].aliases;
+	return aliases.substr(0, aliases.find('|')); // the first alias is always the Segond abbreviation
+}
+
 std::string_view englishBookName(int book)
 {
 	if (book < 1 || book > static_cast<int>(kBooks.size()))

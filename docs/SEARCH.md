@@ -65,3 +65,16 @@ Le livre reconnu est fourni même en cas d'erreur, pour que l'interface puisse l
 - Le moteur suit la numérotation de la Segond (titres de psaumes numérotés). Une autre traduction avec une autre numérotation donnera d'autres limites de versets.
 - Les listes (`Jn 3:16,18` en notation anglaise, `Jn 3:16; 4:2`) ne sont pas gérées ; `;` est refusé explicitement, et la virgule suit la notation française.
 - Les mots tapés avant le premier chiffre sont tous pris pour le nom du livre : `Jean verset 16` sans chapitre n'est pas compris.
+
+## Saisie abrégée (suivre une lecture)
+
+Quand un passage est dans le Preview, les numéros seuls sont relatifs à lui (le chapitre où il se termine) :
+
+| Tapé | Résultat (Preview = Jean 3:16) |
+|---|---|
+| `17`, `:17`, `v17`, `verset 17` | Jean 3:17 |
+| `17-19`, `17 à 19` | Jean 3:17–19 |
+| `4:1`, `4 1`, `4.1` | Jean 4:1 (même livre) |
+| `Jn 17` | Jean 17 en entier (un nom de livre n'est jamais relatif) |
+
+Sans passage dans le Preview, un numéro seul n'est pas compris (rien n'est deviné). Un numéro hors limites est refusé avec le maximum (« ce chapitre n'a que 36 versets »). Dans un livre d'un seul chapitre (Jude), le numéro est un verset du chapitre 1.

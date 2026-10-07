@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.1] - 2026-10-07 - Sélection rapide des versets
+
+Demandé après un premier essai : le plugin n'était pas assez rapide pour suivre un prédicateur.
+
+### Ajouté
+- **Saisie abrégée** : après « Jn 3:16 », taper seulement `17` + Entrée donne Jean 3:17 ; `17-19`, `v17`, `4:1` fonctionnent aussi (voir `docs/SEARCH.md`). Un nom de livre n'est jamais relatif.
+- Après chaque envoi, le champ de recherche est **sélectionné** : le numéro suivant remplace le précédent, sans effacer.
+- **Sélecteur à la souris** sous les boutons : Livres, Chapitres, Versets. Clic = Preview ; Maj+clic = plage depuis le dernier verset cliqué ; Ctrl+clic ou double-clic = ON AIR. Les versets du Preview sont en bleu, ceux à l'antenne en rouge ; le sélecteur suit aussi ce que l'on tape et les flèches Haut/Bas.
+- Les clics du sélecteur ne prennent pas le focus : le clavier reste dans la barre de recherche.
+
+### Vérifié
+- 200 vérifications de plus dans `search_test` : toutes les formes abrégées, les erreurs, l'absence de contexte, et chacun des 31 170 versets atteint par son seul numéro. Une altération volontaire (mauvais chapitre de contexte) est détectée.
+- `dock_ui_test` (97 vérifications, vraies touches et vrais clics simulés) : suivre une lecture au clavier, Livres, Chapitres, Versets, Maj+clic, Ctrl+clic, double-clic, couleurs bleu/rouge, un chiffre impossible ne change rien, un clic de sélecteur n'envoie rien à l'antenne.
+- Un défaut trouvé par ces tests et corrigé : après un changement de chapitre, les anciennes cellules restaient trouvables sous leur nom et un clic pouvait viser le mauvais chapitre.
+
+### Non vérifié
+- Tout ce qui touche OBS et Windows (voir les versions précédentes). Le rendu du sélecteur n'a été vu que sous le thème clair de Qt sous Linux, pas dans le thème sombre d'OBS.
+- Le gain de vitesse réel en situation de culte n'est pas mesuré : il se juge à l'usage.
+- Pas encore de recherche par mots, d'historique ni de favoris (Milestone 09).
+
 ## [0.5.0] - 2026-10-07 - Milestone 05 : overlay pour OBS
 
 ### Ajouté

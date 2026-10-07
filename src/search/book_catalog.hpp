@@ -29,6 +29,9 @@ std::string normalizeText(std::string_view utf8);
 /** Name of a book (1..66) as printed in the Louis Segond Bible, e.g. "1 Corinthiens". Empty if out of range. */
 std::string_view frenchBookName(int book);
 
+/** Short printed form of a book (the Segond's own abbreviation: "Ge", "Jos", "1 Co", "Ap"). Empty if out of range. */
+std::string_view shortBookName(int book);
+
 /** English name of a book (1..66), e.g. "1 Corinthians". Empty if out of range. */
 std::string_view englishBookName(int book);
 
