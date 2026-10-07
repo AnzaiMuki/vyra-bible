@@ -377,6 +377,31 @@ void VyraDock::navigate(bool forward)
 	}
 }
 
+void VyraDock::perform(stage::OperatorAction action)
+{
+	using stage::OperatorAction;
+	switch (action) {
+	case OperatorAction::OnAir:
+		airFromField();
+		break;
+	case OperatorAction::Hide:
+		hideProgram();
+		break;
+	case OperatorAction::PreviewNext:
+		navigate(true);
+		break;
+	case OperatorAction::PreviewPrevious:
+		navigate(false);
+		break;
+	case OperatorAction::PageNext:
+		changePage(true);
+		break;
+	case OperatorAction::PagePrevious:
+		changePage(false);
+		break;
+	}
+}
+
 void VyraDock::changePage(bool forward)
 {
 	if (!stage_ || !(forward ? stage_->nextPage() : stage_->previousPage()))

@@ -41,6 +41,8 @@ target_sources(
   PRIVATE
     src/bible/bible_module.cpp
     src/bible/bible_module.hpp
+    src/obs/hotkeys.cpp
+    src/obs/hotkeys.hpp
     src/obs/obs_source_setup.cpp
     src/obs/obs_source_setup.hpp
     src/overlay/http_routes.cpp
@@ -57,6 +59,7 @@ target_sources(
     src/stage/stage_controller.cpp
     src/stage/paginator.cpp
     src/stage/paginator.hpp
+    src/stage/operator_action.hpp
     src/stage/slide.hpp
     src/stage/stage_controller.hpp
     ui/picker_panel.cpp

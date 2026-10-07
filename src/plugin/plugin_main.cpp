@@ -26,6 +26,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <obs-frontend-api.h>
 #include <plugin-support.h>
 
+#include <QMetaObject>
 #include <QPointer>
 #include <QString>
 #include <QWidget>
@@ -34,6 +35,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <memory>
 
 #include "src/bible/bible_module.hpp"
+#include "src/obs/hotkeys.hpp"
 #include "src/obs/obs_source_setup.hpp"
 #include "src/overlay/overlay_frame.hpp"
 #include "src/overlay/overlay_server.hpp"
@@ -189,9 +191,22 @@ bool obs_module_load(void)
 		});
 	}
 
+	// Global hotkeys. OBS calls them from its own thread: hand the action to the Qt thread and return.
+	{
+		QPointer<vyra::ui::VyraDock> target(dock);
+		vyra::obs::registerHotkeys([target](vyra::stage::OperatorAction action) {
+			if (!target)
+				return;
+			QMetaObject::invokeMethod(
+				target.data(), [target, action] { if (target) target->perform(action); },
+				Qt::QueuedConnection);
+		});
+	}
+
 	// On success OBS takes ownership of the widget (it is wrapped in a QDockWidget).
 	if (!obs_frontend_add_dock_by_id(kDockId, obs_module_text("Dock.Title"), dock)) {
 		obs_log(LOG_ERROR, "OBS refused to register the dock '%s'", kDockId);
+		vyra::obs::unregisterHotkeys();
 		delete dock;
 		g_overlay.reset();
 		return false;
@@ -204,6 +219,7 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
+	vyra::obs::unregisterHotkeys();
 	if (g_dockRegistered) {
 		obs_frontend_remove_dock(kDockId);
 		g_dockRegistered = false;

@@ -22,6 +22,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <cstdio>
 #include <string>
 #include "src/bible/bible_module.hpp"
+#include "src/search/passage_query.hpp"
 #include "src/stage/stage_controller.hpp"
 #include "ui/vyra_dock.hpp"
 #include "tests/check.hpp"
@@ -188,6 +189,23 @@ int main(int c,char**v){QApplication app(c,v);
   QTest::keyClick(edit,Qt::Key_Escape);                              // hidden: page keys do nothing
   const int h4=heard; QTest::keyClick(edit,Qt::Key_PageDown); CHECK(heard==h4 && !pn->isEnabled());
   if(out) d.grab().save(QString("%1/m07_dock.png").arg(out));
+ }
+ { // hotkey actions behave exactly like the buttons; only OnAir changes the program verse
+  using A=vyra::stage::OperatorAction;
+  vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();
+  int heard=0; bool live=false; std::string ref;
+  d.setProgramListener([&](const vyra::stage::StageController&s){ ++heard; live=s.programLive(); ref=s.program()?vyra::search::formatPassage(*s.program(),bible):""; });
+  const int h0=heard;
+  d.perform(A::OnAir); d.perform(A::Hide); d.perform(A::PageNext); d.perform(A::PagePrevious); d.perform(A::PreviewNext);
+  CHECK(heard==h0 && !live);                                           // nothing in preview yet: nothing happens
+  auto*edit=d.findChild<QLineEdit*>();
+  QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return);
+  d.perform(A::PreviewNext); CHECK(contents(d)[0]->text().contains("Jean 3:17") && heard==h0);   // preview moves, program does not
+  d.perform(A::PreviewPrevious); d.perform(A::PreviewPrevious); CHECK(contents(d)[0]->text().contains("Jean 3:15") && heard==h0);
+  d.perform(A::OnAir); CHECK(live && ref.find("3:15")!=std::string::npos && heard==h0+1);
+  d.perform(A::PreviewNext); CHECK(ref.find("3:15")!=std::string::npos && heard==h0+1);          // stepping never touches the air
+  d.perform(A::Hide); CHECK(!live && heard==h0+2);
+  d.perform(A::Hide); CHECK(heard==h0+2);                                                       // already hidden
  }
  { // the "add the source to OBS" button exists only when something can do it, and shows what happened
   vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();

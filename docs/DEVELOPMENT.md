@@ -90,3 +90,7 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 22. Menu de thème du dock : Bandeau bas, Plein écran, Texte seul. Mettre Ps 119:1-40 à l'antenne : le texte est coupé en pages, le dock affiche « Page 1/N ».
 23. PageDown / PageUp dans la barre de recherche (ou les boutons) : l'écran d'OBS change de page avec un fondu, le PREVIEW ne bouge pas.
 24. Changer de thème pendant l'antenne : l'écran d'OBS change de style et revient à la page 1. Vérifier la lisibilité de chaque thème sur l'écran final.
+25. OBS > Paramètres > Raccourcis : six lignes « VYRA Bible : … », sans touche attribuée. Les traduire (français / anglais) en changeant la langue d'OBS.
+26. Attribuer une touche à « Mettre à l'antenne », mettre le focus sur une autre fenêtre (ou une autre partie d'OBS) : la touche met le passage du Preview à l'antenne.
+27. Attribuer verset suivant/précédent, page suivante/précédente, Masquer : chacune agit comme le bouton correspondant du dock, et le verset à l'antenne ne change qu'avec ON AIR.
+28. Fermer puis rouvrir OBS : les touches choisies sont toujours là. Noter tout conflit avec d'autres touches OBS.

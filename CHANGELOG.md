@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0] - 2026-10-08 - Milestone 08 : raccourcis clavier OBS
+
+### Ajouté
+- Six raccourcis globaux dans OBS (Paramètres > Raccourcis, « VYRA Bible : … ») qui marchent même quand le dock n'a pas le focus : ON AIR, Masquer, verset suivant / précédent (Preview), page suivante / précédente (antenne). **Aucune touche n'est attribuée par défaut** : l'opérateur choisit, le plugin ne peut donc voler la touche d'aucun autre plugin. Les touches sont sauvegardées avec le profil OBS.
+- Les raccourcis passent par la même fonction que les boutons (`VyraDock::perform`) : mêmes règles, seul ON AIR change le verset à l'antenne.
+- OBS appelle les raccourcis depuis son propre thread ; l'action est transmise au thread de l'interface par un appel en file d'attente, et seule la pression de la touche compte (pas le relâchement).
+
+### Vérifié (Linux, sans OBS)
+- `dock_ui_test` : chaque action via `perform` (rien ne se passe sans Preview, les pas ne touchent pas l'antenne, Masquer deux fois n'envoie rien) ; une altération volontaire (verset suivant branché sur ON AIR) est détectée.
+- Compilation avec avertissements activés contre les vrais en-têtes d'OBS.
+
+### Non vérifié
+- **Les raccourcis eux-mêmes** : `obs_hotkey_register_frontend`, la sauvegarde/chargement des touches et le passage du thread OBS au thread Qt n'ont jamais été exécutés (pas d'OBS ici). À tester sous Windows (liste de contrôle, points 25 à 28).
+
 ## [0.7.0] - 2026-10-07 - Milestone 07 : thèmes et pagination
 
 ### Ajouté

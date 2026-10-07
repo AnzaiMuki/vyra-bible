@@ -14,6 +14,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "src/bible/bible_module.hpp"
 #include "src/search/passage_query.hpp"
+#include "src/stage/operator_action.hpp"
 
 namespace vyra::stage {
 class StageController;
@@ -76,6 +77,12 @@ public:
 	 */
 	using AddSourceHandler = std::function<QString()>;
 	void setAddSourceHandler(AddSourceHandler handler);
+
+	/**
+	 * Does what the operator asked from outside the dock (OBS hotkeys). Same rules as the buttons and keys:
+	 * only OnAir changes the PROGRAM verse, a failed action changes nothing. Must be called from the Qt thread.
+	 */
+	void perform(stage::OperatorAction action);
 
 	/** Sets the status line at the bottom of the dock. @p isError shows it in red. */
 	void setStatus(const QString &text, bool isError);
