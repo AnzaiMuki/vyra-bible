@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.13.0] - 2026-10-09 - Milestone 12 : empaquetage
+
+### Ajouté
+- Installateur : icône VYRA, images de l'assistant aux couleurs de VYRA Studio, écran de fin d'installation (français / anglais) qui explique les premiers pas, métadonnées de l'éditeur.
+- Un zip d'installation manuelle (`VYRA-Bible-<version>-manual.zip`) et `SHA256SUMS.txt`, produits avec le setup et attachés aux Releases GitHub.
+- Documentation : installation silencieuse (`/SILENT`), mise à jour, désinstallation (favoris et historique conservés), avertissement SmartScreen.
+
+### Corrigé
+- Les tests Linux de GitHub échouaient depuis le changement de design (largeur minimale du dock dépendante des polices) : seuil à 400 px, largeur affichée en cas d'échec. Le workflow remonte maintenant les lignes en échec dans les annotations.
+- Formatage (clang-format 19 appliqué aux sources et tests ; les fichiers du modèle OBS dans `cmake/` sont laissés tels quels).
+
+### Vérifié (sur GitHub, machines Windows et Linux réelles)
+- Le plugin compile avec MSVC et avec le vrai OBS 31.1.1 sous Windows et macOS (premier vrai build : jusqu'ici seule la syntaxe avait été contrôlée) ; le setup se construit (Inno Setup, 2 minutes) ; les tests Linux et le contrôle de format passent.
+
+### Non vérifié
+- **Le setup lancé sur un PC**, et le plugin chargé dans OBS : jamais exécutés. Je n'ai pas pu télécharger le setup depuis ici (téléchargement bloqué).
+- Le paquet Ubuntu du modèle OBS échoue à l'étape « Package Plugin » (journal illisible depuis ici, hors cible : le projet vise Windows).
+- Aucun certificat de signature : SmartScreen prévient.
+
 ## [0.12.0] - 2026-10-08 - Milestone 11 : tests et stabilité
 
 ### Ajouté

@@ -13,7 +13,7 @@ Prérequis : Windows 64 bits, OBS Studio 30 ou plus récent. Le plugin est const
 
 ## Obtenir le setup .exe
 
-Le setup n'est pas encore produit : il faut le construire (aucun binaire n'existe pour l'instant). Un .exe Windows ne peut pas être fabriqué sur Linux ; il est construit par GitHub sur une machine Windows.
+Le setup n'est pas distribué dans le dépôt : il est construit par GitHub sur une machine Windows (un .exe Windows ne se fabrique pas sous Linux). Chaque exécution produit le setup, un zip d'installation manuelle (`VYRA-Bible-<version>-manual.zip`, à extraire sur le dossier d'OBS, utile sans droits administrateur ou avec OBS portable) et `SHA256SUMS.txt` pour vérifier les téléchargements.
 
 **Option A : sans Visual Studio, via GitHub Actions** (le projet est déjà sur GitHub)
 1. Onglet **Actions** > **Windows installer** > **Run workflow** (branche `main`).
@@ -31,9 +31,20 @@ Copiez, depuis le dossier produit par `cmake --install` :
 - `vyra-bible\bin\64bit\vyra-bible.dll` vers `<OBS>\obs-plugins\64bit\`
 - `vyra-bible\data\*` vers `<OBS>\data\obs-plugins\vyra-bible\`
 
+## Installation silencieuse (pour plusieurs PC)
+
+`VYRA-Bible-Setup-<version>.exe /SILENT /DIR="C:\Program Files\obs-studio"` (ajouter `/LANG=french` si besoin). `/VERYSILENT` n'affiche rien du tout.
+
+## Mise à jour et désinstallation
+
+Lancer le nouveau setup par-dessus l'ancien : il remplace le plugin (il propose de fermer OBS s'il est ouvert). La désinstallation retire le plugin ; **vos favoris et votre historique** (`library.txt`, dossier de configuration d'OBS) sont conservés.
+
 ## État de vérification
 
-L'installateur (`installer/vyra-bible.iss`), le script PowerShell et le workflow n'ont **pas été exécutés** : l'environnement de développement actuel est sous Linux, sans Inno Setup ni compilateur Windows. Points à vérifier au premier essai :
+Vérifié : GitHub construit le plugin pour Windows et le setup (Inno Setup compile sans erreur avec l'icône, les images de l'assistant, les textes de fin d'installation, le zip manuel et les sommes de contrôle).
+**Pas vérifié** : l'exécution du setup sur un PC (je ne peux pas le lancer ici). Points à contrôler au premier essai :
 - la détection du dossier d'OBS par la clé de registre `HKLM\SOFTWARE\OBS Studio` (sinon, repli sur `C:\Program Files\obs-studio`) ;
 - l'absence de besoin d'un runtime Visual C++ séparé sur un PC neuf (OBS embarque normalement le sien) ;
-- le comportement si OBS est ouvert pendant une mise à jour.
+- le comportement si OBS est ouvert pendant une mise à jour ;
+- l'affichage correct des accents dans l'écran de fin d'installation, l'icône, les images de l'assistant ;
+- l'avertissement SmartScreen de Windows : le setup n'est pas signé numériquement (un certificat de signature est payant), Windows peut afficher « Éditeur inconnu » : « Informations complémentaires » puis « Exécuter quand même ».
