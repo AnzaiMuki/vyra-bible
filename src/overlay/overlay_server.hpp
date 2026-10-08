@@ -53,7 +53,6 @@ public:
 	static constexpr int kMaxConnections = 32;
 
 private:
-
 	void onNewConnection();
 	void onReadyRead(QTcpSocket *socket);
 	void respond(QTcpSocket *socket, const QByteArray &head, const QByteArray &body);

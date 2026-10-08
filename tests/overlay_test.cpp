@@ -94,14 +94,30 @@ struct Reader {
 			}
 			const char e = t[i++];
 			switch (e) {
-			case '"': out += '"'; break;
-			case '\\': out += '\\'; break;
-			case '/': out += '/'; break;
-			case 'n': out += '\n'; break;
-			case 'r': out += '\r'; break;
-			case 't': out += '\t'; break;
-			case 'b': out += '\b'; break;
-			case 'f': out += '\f'; break;
+			case '"':
+				out += '"';
+				break;
+			case '\\':
+				out += '\\';
+				break;
+			case '/':
+				out += '/';
+				break;
+			case 'n':
+				out += '\n';
+				break;
+			case 'r':
+				out += '\r';
+				break;
+			case 't':
+				out += '\t';
+				break;
+			case 'b':
+				out += '\b';
+				break;
+			case 'f':
+				out += '\f';
+				break;
 			case 'u': {
 				if (i + 4 > t.size()) {
 					ok = false;
@@ -111,7 +127,9 @@ struct Reader {
 				i += 4;
 				break;
 			}
-			default: ok = false; return out;
+			default:
+				ok = false;
+				return out;
 			}
 		}
 		if (i >= t.size())
@@ -197,11 +215,13 @@ Frame frameWith(const std::string &reference, const std::string &verseText)
 void testJsonShape()
 {
 	Frame f = frameWith("Jean 3:16", "Car Dieu");
-	CHECK(toJson(f) == "{\"rev\":7,\"visible\":true,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"Jean 3:16\",\"verses\":[{\"c\":1,\"v\":2,\"t\":\"Car Dieu\"}]}");
+	CHECK(toJson(f) ==
+	      "{\"rev\":7,\"visible\":true,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"Jean 3:16\",\"verses\":[{\"c\":1,\"v\":2,\"t\":\"Car Dieu\"}]}");
 
 	Frame hidden;
 	hidden.revision = 8;
-	CHECK(toJson(hidden) == "{\"rev\":8,\"visible\":false,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"\",\"verses\":[]}");
+	CHECK(toJson(hidden) ==
+	      "{\"rev\":8,\"visible\":false,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"\",\"verses\":[]}");
 
 	// A hidden frame never carries text, even if the slide still holds some.
 	Frame stale = frameWith("Jean 3:16", "Car Dieu");
@@ -211,8 +231,9 @@ void testJsonShape()
 
 void testJsonEscaping()
 {
-	const std::string nasty = std::string("guillemet \" antislash \\ lt < gt > amp & nl \n cr \r tab \t nul-ish \x01\x1f ") +
-				  "e\xCC\x81 \xC3\xA9 \xE2\x80\xA8 \xE2\x80\xA9 \xE2\x80\x99 \xF0\x9F\x95\x8A";
+	const std::string nasty =
+		std::string("guillemet \" antislash \\ lt < gt > amp & nl \n cr \r tab \t nul-ish \x01\x1f ") +
+		"e\xCC\x81 \xC3\xA9 \xE2\x80\xA8 \xE2\x80\xA9 \xE2\x80\x99 \xF0\x9F\x95\x8A";
 	const std::string json = toJson(frameWith("Réf <b>", nasty));
 
 	CHECK(json.find('\n') == std::string::npos); // one line: required by the SSE framing
@@ -245,7 +266,8 @@ void testWholeBibleRoundTrip()
 			for (int chapter = 1; chapter <= g_bible.chapterCount(book); ++chapter) {
 				CHECK(s.showInPreview({book, chapter, 1, chapter, g_bible.verseCount(book, chapter)}));
 				CHECK(s.takeOnAir());
-				std::map<int, std::string> rebuilt; // verse -> text put together from the pieces read from JSON
+				std::map<int, std::string>
+					rebuilt; // verse -> text put together from the pieces read from JSON
 				int expectedPage = 1;
 				do {
 					const Frame f = makeFrame(s, 1);
@@ -283,11 +305,11 @@ void testWholeBibleRoundTrip()
 void testFrameFollowsTheProgramOnly()
 {
 	StageController s(g_bible);
-	CHECK(!makeFrame(s, 1).visible);                 // nothing yet
+	CHECK(!makeFrame(s, 1).visible); // nothing yet
 
 	Json j;
 	s.showInPreview(resolveQuery("Jn 3:16", g_bible).passage);
-	CHECK(!makeFrame(s, 2).visible);                 // preview alone shows nothing on the air
+	CHECK(!makeFrame(s, 2).visible); // preview alone shows nothing on the air
 	s.takeOnAir();
 	Frame f = makeFrame(s, 3);
 	CHECK(f.visible && f.revision == 3 && f.reference == "Jean 3:16");

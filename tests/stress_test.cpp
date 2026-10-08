@@ -40,10 +40,46 @@ std::string randomBytes(std::mt19937 &rng, std::size_t n)
 /** Text that looks like queries: pieces of real ones, glued at random. */
 std::string randomQuery(std::mt19937 &rng)
 {
-	static const char *const pieces[] = {"Jn",   "Jean", "Ps",  "Psaumes", "1",   "3",  "16",   "119", "176", ":",   "-",
-					     " ",    "  ",   "v",   ";",       ",",   "–",  "—",    "99999999999999999999",
-					     "0",    "-1",   "Ap",  "Gn",      "é",   "è",  "\xC3", "\xE2\x80", "\xFF", ".",
-					     "1 Co", "2 R",  "Cant", "Ex",     "\t",  "\n", "\r",   "%",   "<b>", "\"", "'"};
+	static const char *const pieces[] = {"Jn",
+					     "Jean",
+					     "Ps",
+					     "Psaumes",
+					     "1",
+					     "3",
+					     "16",
+					     "119",
+					     "176",
+					     ":",
+					     "-",
+					     " ",
+					     "  ",
+					     "v",
+					     ";",
+					     ",",
+					     "–",
+					     "—",
+					     "99999999999999999999",
+					     "0",
+					     "-1",
+					     "Ap",
+					     "Gn",
+					     "é",
+					     "è",
+					     "\xC3",
+					     "\xE2\x80",
+					     "\xFF",
+					     ".",
+					     "1 Co",
+					     "2 R",
+					     "Cant",
+					     "Ex",
+					     "\t",
+					     "\n",
+					     "\r",
+					     "%",
+					     "<b>",
+					     "\"",
+					     "'"};
 	std::string q;
 	const int count = static_cast<int>(rng() % 8);
 	for (int i = 0; i < count; ++i)
@@ -229,7 +265,8 @@ void testPaginatorHostile()
 				CHECK(pv.verse >= 1 && static_cast<std::size_t>(pv.verse) <= slide.verses.size());
 				if (pv.verse >= 1 && static_cast<std::size_t>(pv.verse) <= slide.verses.size())
 					rebuilt[pv.verse - 1] += letters(pv.text);
-				const unsigned char first = pv.text.empty() ? 0 : static_cast<unsigned char>(pv.text[0]);
+				const unsigned char first = pv.text.empty() ? 0
+									    : static_cast<unsigned char>(pv.text[0]);
 				CHECK((first & 0xC0) != 0x80); // never cut inside a UTF-8 sequence
 			}
 		}
@@ -251,9 +288,9 @@ void testLibraryFuzz()
 				text += randomBytes(rng, rng() % 30);
 			} else {
 				const search::Passage p = randomPassage(rng);
-				text += std::string(1, "HFXh"[rng() % 4]) + " " + std::to_string(p.book) + " " + std::to_string(p.startChapter) +
-					" " + std::to_string(p.startVerse) + " " + std::to_string(p.endChapter) + " " +
-					std::to_string(p.endVerse);
+				text += std::string(1, "HFXh"[rng() % 4]) + " " + std::to_string(p.book) + " " +
+					std::to_string(p.startChapter) + " " + std::to_string(p.startVerse) + " " +
+					std::to_string(p.endChapter) + " " + std::to_string(p.endVerse);
 			}
 			text += (rng() % 5 == 0) ? "\r\n" : "\n";
 		}
@@ -271,7 +308,8 @@ void testLibraryFuzz()
 	}
 	// Huge numbers must not overflow into something valid.
 	library::PassageLibrary lib;
-	const auto r = lib.parse("VYRA-LIBRARY 1\nH 4294967299 3 16 3 16\nH 43 4294967299 16 3 16\nH 43 3 16 3 16 \n", g_bible);
+	const auto r = lib.parse("VYRA-LIBRARY 1\nH 4294967299 3 16 3 16\nH 43 4294967299 16 3 16\nH 43 3 16 3 16 \n",
+				 g_bible);
 	CHECK(lib.history().size() <= 1);
 	(void)r;
 }
@@ -287,8 +325,10 @@ void testBibleLoaderHostile()
 			if (rng() % 3 == 0)
 				body += randomBytes(rng, rng() % 40);
 			else
-				body += std::to_string(static_cast<int>(rng() % 70) - 1) + "\t" + std::to_string(static_cast<int>(rng() % 5) - 1) + "\t" +
-					std::to_string(static_cast<int>(rng() % 5) - 1) + "\t" + randomBytes(rng, rng() % 20);
+				body += std::to_string(static_cast<int>(rng() % 70) - 1) + "\t" +
+					std::to_string(static_cast<int>(rng() % 5) - 1) + "\t" +
+					std::to_string(static_cast<int>(rng() % 5) - 1) + "\t" +
+					randomBytes(rng, rng() % 20);
 			body += '\n';
 		}
 		bible::BibleModule m;

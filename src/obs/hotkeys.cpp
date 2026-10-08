@@ -18,8 +18,8 @@ namespace {
 
 struct Entry {
 	stage::OperatorAction action;
-	const char *name;            // stable id saved in the OBS profile: never rename
-	const char *labelKey;        // locale key of the label shown in OBS
+	const char *name;     // stable id saved in the OBS profile: never rename
+	const char *labelKey; // locale key of the label shown in OBS
 	obs_hotkey_id id = OBS_INVALID_HOTKEY_ID;
 };
 

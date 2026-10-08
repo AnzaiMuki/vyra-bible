@@ -24,8 +24,8 @@ bool contains(const std::vector<search::Passage> &list, const search::Passage &p
 void appendLines(std::ostringstream &out, char tag, const std::vector<search::Passage> &list)
 {
 	for (const search::Passage &p : list)
-		out << tag << ' ' << p.book << ' ' << p.startChapter << ' ' << p.startVerse << ' ' << p.endChapter << ' '
-		    << p.endVerse << '\n';
+		out << tag << ' ' << p.book << ' ' << p.startChapter << ' ' << p.startVerse << ' ' << p.endChapter
+		    << ' ' << p.endVerse << '\n';
 }
 
 } // namespace

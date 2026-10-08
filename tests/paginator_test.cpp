@@ -96,7 +96,7 @@ void testBasics()
 	const auto p3 = paginate(three, 90);
 	CHECK(p3.size() == 2 && p3[0].verses.size() == 2 && p3[1].verses.size() == 1);
 	CHECK(paginate(three, 1000).size() == 1);
-	CHECK(paginate(three, 40).size() == 3);   // one verse per page: each exactly fits
+	CHECK(paginate(three, 40).size() == 3); // one verse per page: each exactly fits
 	CHECK(lossless(three, p3));
 }
 
@@ -193,7 +193,8 @@ void testWholeBible()
 	}
 	CHECK(ok);
 	CHECK(chapters == 3u * 1189u);
-	std::printf("pagination: %zu chapters x budgets, %zu pages, fullest page %zu characters\n", chapters, pagesTotal, longest);
+	std::printf("pagination: %zu chapters x budgets, %zu pages, fullest page %zu characters\n", chapters,
+		    pagesTotal, longest);
 }
 
 void testPsalm119()

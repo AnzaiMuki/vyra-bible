@@ -108,9 +108,7 @@ if(Qt6_FOUND)
   target_include_directories(overlay_demo PRIVATE "${VYRA_ROOT}")
   target_compile_definitions(
     overlay_demo
-    PRIVATE
-      VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv"
-      VYRA_OVERLAY_DIR="${VYRA_ROOT}/data/overlay"
+    PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv" VYRA_OVERLAY_DIR="${VYRA_ROOT}/data/overlay"
   )
   target_link_libraries(overlay_demo PRIVATE Qt6::Core Qt6::Network)
 
@@ -132,9 +130,7 @@ if(Qt6_FOUND)
   target_include_directories(dock_ui_test PRIVATE "${VYRA_ROOT}" "${CMAKE_CURRENT_SOURCE_DIR}/stubs")
   target_compile_definitions(
     dock_ui_test
-    PRIVATE
-      VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv"
-      VYRA_LOCALE_FR="${VYRA_ROOT}/data/locale/fr-FR.ini"
+    PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv" VYRA_LOCALE_FR="${VYRA_ROOT}/data/locale/fr-FR.ini"
   )
   target_link_libraries(dock_ui_test PRIVATE Qt6::Widgets Qt6::Test)
   # Timing tool, not a test: build in Release and run it by hand (see docs/DEVELOPMENT.md).

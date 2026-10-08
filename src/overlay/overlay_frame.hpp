@@ -24,7 +24,7 @@ struct Frame {
 	std::string theme = "lower";     // "lower", "full" or "minimal"
 	int page = 1;                    // 1-based, of @c pages
 	int pages = 1;
-	std::string reference;           // printed reference of the whole passage
+	std::string reference;                // printed reference of the whole passage
 	std::vector<stage::PageVerse> verses; // the verses of this page only; meaningful only when visible
 };
 

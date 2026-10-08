@@ -21,7 +21,7 @@ namespace vyra::overlay {
 
 namespace {
 
-constexpr int kRequestTimeoutMs = 5000;   // a client that does not finish its request is dropped
+constexpr int kRequestTimeoutMs = 5000; // a client that does not finish its request is dropped
 constexpr int kKeepAliveMs = 15000;
 constexpr qint64 kMaxBacklogBytes = 1 << 20; // a stream client this far behind is dropped, never waited for
 
@@ -112,8 +112,8 @@ void OverlayServer::onReadyRead(QTcpSocket *socket)
 	received += socket->readAll();
 
 	bool complete = false;
-	const Route route = routeRequest(std::string_view(received.constData(), static_cast<size_t>(received.size())),
-					 complete);
+	const Route route =
+		routeRequest(std::string_view(received.constData(), static_cast<size_t>(received.size())), complete);
 	if (!complete) {
 		socket->setProperty("received", received);
 		return;
@@ -132,7 +132,8 @@ void OverlayServer::onReadyRead(QTcpSocket *socket)
 		serveFile(socket, "overlay.js", "text/javascript; charset=utf-8");
 		break;
 	case Route::State:
-		respond(socket, bytes(okHead("application/json; charset=utf-8", static_cast<size_t>(latestJson_.size()))),
+		respond(socket,
+			bytes(okHead("application/json; charset=utf-8", static_cast<size_t>(latestJson_.size()))),
 			latestJson_);
 		break;
 	case Route::Events:

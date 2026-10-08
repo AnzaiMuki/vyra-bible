@@ -576,9 +576,10 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 				     QString::number(chapter) + QLatin1Char(':'),
 			     false, true);
 	});
-	connect(picker_, &PickerPanel::verseChosen, this, [this](int book, int chapter, int verse, bool extend, bool onAir) {
-		pickVerse(book, chapter, verse, extend, onAir);
-	});
+	connect(picker_, &PickerPanel::verseChosen, this,
+		[this](int book, int chapter, int verse, bool extend, bool onAir) {
+			pickVerse(book, chapter, verse, extend, onAir);
+		});
 	connect(searchEdit_, &QLineEdit::textChanged, this, [this] { onQueryChanged(); });
 	connect(previousButton_, &QPushButton::clicked, this, [this] { navigate(false); });
 	connect(nextButton_, &QPushButton::clicked, this, [this] { navigate(true); });
@@ -595,11 +596,13 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 		// its own click signal (the view would still touch the item it just lost).
 		connect(list, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
 			const search::Passage passage = passageOf(item);
-			QMetaObject::invokeMethod(this, [this, passage] { useLibraryItem(passage, false); }, Qt::QueuedConnection);
+			QMetaObject::invokeMethod(
+				this, [this, passage] { useLibraryItem(passage, false); }, Qt::QueuedConnection);
 		});
 		connect(list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item) {
 			const search::Passage passage = passageOf(item);
-			QMetaObject::invokeMethod(this, [this, passage] { useLibraryItem(passage, true); }, Qt::QueuedConnection);
+			QMetaObject::invokeMethod(
+				this, [this, passage] { useLibraryItem(passage, true); }, Qt::QueuedConnection);
 		});
 	}
 	connect(pagePreviousButton_, &QPushButton::clicked, this, [this] { changePage(false); });
@@ -648,7 +651,8 @@ void VyraDock::previewFromField()
 		return;
 	if (stage_->showInPreview(query_.passage)) {
 		setFieldToPreview();
-		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
+		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))),
+			  false);
 		refresh(true);
 	}
 }
@@ -678,7 +682,8 @@ void VyraDock::navigate(bool forward)
 		return;
 	if (forward ? stage_->previewNext() : stage_->previewPrevious()) {
 		setFieldToPreview();
-		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
+		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))),
+			  false);
 		refresh(true);
 	}
 }
@@ -720,7 +725,9 @@ void VyraDock::toggleFavorite()
 	const bool wasFavorite = library_.isFavorite(passage);
 	const bool nowFavorite = library_.toggleFavorite(passage);
 	if (!wasFavorite && !nowFavorite) {
-		setStatus(text("Error.FavoritesFull").arg(static_cast<qulonglong>(library::PassageLibrary::kMaxFavorites)), true);
+		setStatus(
+			text("Error.FavoritesFull").arg(static_cast<qulonglong>(library::PassageLibrary::kMaxFavorites)),
+			true);
 		return;
 	}
 	saveLibrary();
@@ -736,7 +743,8 @@ void VyraDock::refreshLibrary()
 		list->clear();
 		for (const search::Passage &p : passages) {
 			auto *item = new QListWidgetItem(fromStd(search::formatPassage(p, *bible_)));
-			item->setData(Qt::UserRole, QVariantList{p.book, p.startChapter, p.startVerse, p.endChapter, p.endVerse});
+			item->setData(Qt::UserRole,
+				      QVariantList{p.book, p.startChapter, p.startVerse, p.endChapter, p.endVerse});
 			list->addItem(item);
 		}
 	};
@@ -811,7 +819,8 @@ void VyraDock::changeTheme(int index)
 void VyraDock::hideProgram()
 {
 	if (stage_ && stage_->hideProgram()) {
-		setStatus(text("Status.Hidden").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
+		setStatus(text("Status.Hidden").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))),
+			  false);
 		refresh();
 		notifyProgram();
 	}

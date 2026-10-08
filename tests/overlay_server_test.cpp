@@ -27,7 +27,7 @@ using namespace vyra::overlay;
 namespace {
 
 /** Runs the event loop until @p done() or until @p ms have passed. */
-template <class F> bool waitFor(F done, int ms = 3000)
+template<class F> bool waitFor(F done, int ms = 3000)
 {
 	QElapsedTimer t;
 	t.start();
@@ -123,7 +123,7 @@ void testPortFallbackAndFailure()
 	CHECK(first.start(18430, 18439));
 	OverlayServer second(VYRA_OVERLAY_DIR);
 	CHECK(second.start(18430, 18439));
-	CHECK(second.port() == first.port() + 1);       // the next free port
+	CHECK(second.port() == first.port() + 1); // the next free port
 
 	OverlayServer third(VYRA_OVERLAY_DIR);
 	QString error;
@@ -196,7 +196,8 @@ void testStateAndStream()
 	CHECK(server.start(18460, 18469));
 	const quint16 p = server.port();
 
-	CHECK(bodyOf(get(p, "/state")) == "{\"rev\":0,\"visible\":false,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"\",\"verses\":[]}");
+	CHECK(bodyOf(get(p, "/state")) ==
+	      "{\"rev\":0,\"visible\":false,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"\",\"verses\":[]}");
 
 	server.publish(onAir(1, "Jean 3:16", "Car Dieu"));
 	CHECK(bodyOf(get(p, "/state")).contains("\"reference\":\"Jean 3:16\""));
@@ -207,7 +208,8 @@ void testStateAndStream()
 	CHECK(waitFor([&] { return a.messages() == 1; }));
 	CHECK(a.received.startsWith("HTTP/1.1 200 OK"));
 	CHECK(a.received.contains("text/event-stream"));
-	CHECK(a.received.contains("data: {\"rev\":1,\"visible\":true,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"Jean 3:16\""));
+	CHECK(a.received.contains(
+		"data: {\"rev\":1,\"visible\":true,\"theme\":\"lower\",\"page\":1,\"pages\":1,\"reference\":\"Jean 3:16\""));
 	CHECK(waitFor([&] { return server.clientCount() == 1; }));
 
 	// Every published frame reaches every client, in order.
@@ -322,7 +324,12 @@ void testHostileClients()
 		CHECK(waitFor([&] { return silent.state() == QAbstractSocket::ConnectedState; }));
 		silent.write("\x01\x02 garbage without end");
 		CHECK(get(p, "/state").startsWith("HTTP/1.1 200 OK")); // served meanwhile
-		CHECK(waitFor([&] { silent.readAll(); return silent.state() == QAbstractSocket::UnconnectedState; }, 8000));
+		CHECK(waitFor(
+			[&] {
+				silent.readAll();
+				return silent.state() == QAbstractSocket::UnconnectedState;
+			},
+			8000));
 	}
 	const QByteArray state = get(p, "/state");
 	CHECK(state.startsWith("HTTP/1.1 200 OK") && bodyOf(state).contains("\"reference\":\"Jean 3:16\""));
@@ -334,7 +341,8 @@ void testHostileClients()
 			streams.push_back(std::make_unique<Stream>());
 			streams.back()->open(p);
 		}
-		server.publish(onAir(static_cast<unsigned long long>(100 + round), "Psaumes 23", "L'Éternel est mon berger"));
+		server.publish(
+			onAir(static_cast<unsigned long long>(100 + round), "Psaumes 23", "L'Éternel est mon berger"));
 		if (round % 2)
 			waitFor([&] { return false; }, 10);
 		// the streams are destroyed here, some before their first message arrived

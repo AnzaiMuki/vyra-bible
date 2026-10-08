@@ -19,11 +19,18 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include "ui/vyra_dock.hpp"
 
 static std::map<std::string, std::string> g;
-extern "C" const char *obs_module_text(const char *k) { auto i = g.find(k); return i == g.end() ? k : i->second.c_str(); }
+extern "C" const char *obs_module_text(const char *k)
+{
+	auto i = g.find(k);
+	return i == g.end() ? k : i->second.c_str();
+}
 extern "C" void obs_log(int, const char *, ...) {}
 
 using Clock = std::chrono::steady_clock;
-static double since(Clock::time_point t) { return std::chrono::duration<double, std::milli>(Clock::now() - t).count(); }
+static double since(Clock::time_point t)
+{
+	return std::chrono::duration<double, std::milli>(Clock::now() - t).count();
+}
 
 int main(int argc, char **argv)
 {

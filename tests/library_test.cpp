@@ -50,9 +50,11 @@ int main()
 		lib.addToHistory(P("Jn 3:16"));
 		lib.addToHistory(P("Ps 23"));
 		lib.addToHistory(P("Rm 8:28"));
-		CHECK(lib.history().size() == 3 && lib.history()[0] == P("Rm 8:28") && lib.history()[2] == P("Jn 3:16"));
+		CHECK(lib.history().size() == 3 && lib.history()[0] == P("Rm 8:28") &&
+		      lib.history()[2] == P("Jn 3:16"));
 		lib.addToHistory(P("Jn 3:16")); // again: moves to the top, no second copy
-		CHECK(lib.history().size() == 3 && lib.history()[0] == P("Jn 3:16") && lib.history()[1] == P("Rm 8:28"));
+		CHECK(lib.history().size() == 3 && lib.history()[0] == P("Jn 3:16") &&
+		      lib.history()[1] == P("Rm 8:28"));
 		CHECK(!(P("Jn 3:16") == P("Jn 3:17")) && !(P("Jn 3:16") == P("Jn 3:16-17")));
 		for (int v = 1; v <= 31; ++v)
 			lib.addToHistory({1, 1, v, 1, v}); // 31 more: 34 total, under the cap
@@ -112,7 +114,8 @@ int main()
 
 	{ // damaged and foreign content: skipped, counted, never fatal
 		PassageLibrary lib;
-		const std::string text = std::string("VYRA-LIBRARY 1\r\n") + "H 43 3 16 3 16\r\n" // CRLF is tolerated
+		const std::string text = std::string("VYRA-LIBRARY 1\r\n") +
+					 "H 43 3 16 3 16\r\n" // CRLF is tolerated
 					 "H 43 3 16 3 99\n"   // verse that does not exist
 					 "H 43 3 18 3 16\n"   // reversed
 					 "X 43 3 16 3 16\n"   // unknown tag
@@ -121,7 +124,7 @@ int main()
 					 "F abc\n"
 					 "\n"
 					 "F 43 3 16 3 16\n"
-					 "F 43 3 16 3 16\n";  // duplicate: kept once
+					 "F 43 3 16 3 16\n"; // duplicate: kept once
 		const LoadReport r = lib.parse(text, g_bible);
 		CHECK(r.skippedLines == 6);
 		CHECK(lib.history().size() == 1 && lib.favorites().size() == 1);
@@ -130,10 +133,11 @@ int main()
 		const LoadReport bad = other.parse("not a library file\nH 43 3 16 3 16\n", g_bible);
 		CHECK(bad.skippedLines == 1 && other.history().empty() && other.favorites().empty());
 		const LoadReport empty = other.parse("", g_bible);
-		CHECK(empty.skippedLines == 0 && other.history().empty());  // an empty file is an empty library
+		CHECK(empty.skippedLines == 0 && other.history().empty()); // an empty file is an empty library
 		// a Bible with fewer verses (another translation) drops what it does not have
 		bible::BibleModule tiny;
-		std::istringstream tinyIn("#vyra-module\t1\n#code\tT\n#name\tTiny\n#language\tfr\n#license\tPD\n#source\tx\n43\t3\t16\tCar Dieu\n");
+		std::istringstream tinyIn(
+			"#vyra-module\t1\n#code\tT\n#name\tTiny\n#language\tfr\n#license\tPD\n#source\tx\n43\t3\t16\tCar Dieu\n");
 		CHECK(tiny.loadFromStream(tinyIn).ok());
 		PassageLibrary t;
 		const LoadReport tr = t.parse("VYRA-LIBRARY 1\nH 43 3 16 3 16\nH 43 3 17 3 17\n", tiny);
@@ -156,7 +160,8 @@ int main()
 		CHECK(lib.saveToFile(dir / "sub" / "library.txt")); // replaces
 		PassageLibrary again;
 		const LoadReport r = again.loadFromFile(dir / "sub" / "library.txt", g_bible);
-		CHECK(r.fileFound && r.skippedLines == 0 && again.history().size() == 2 && again.favorites().size() == 1);
+		CHECK(r.fileFound && r.skippedLines == 0 && again.history().size() == 2 &&
+		      again.favorites().size() == 1);
 		CHECK(slurp(dir / "sub" / "library.txt") == lib.serialize());
 		// a path that cannot be a file (its parent is a regular file)
 		CHECK(!lib.saveToFile(dir / "sub" / "library.txt" / "x.txt"));

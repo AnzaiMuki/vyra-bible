@@ -41,8 +41,8 @@ public:
 	{
 		setText(label);
 		setProperty("pickCell", true); // selector of the style sheet
-		setFocusPolicy(Qt::NoFocus); // the keyboard stays in the search bar
-		setAutoRaise(false); // the cell is fully drawn by the style sheet
+		setFocusPolicy(Qt::NoFocus);   // the keyboard stays in the search bar
+		setAutoRaise(false);           // the cell is fully drawn by the style sheet
 	}
 
 	/** Keys held when the button was pressed (what the click means depends on them). */
@@ -117,8 +117,8 @@ void FlowGrid::relayout()
 	for (QToolButton *cell : cells_) {
 		const int row = index / columns;
 		const int col = index % columns;
-		cell->setGeometry(col * (cellSize_.width() + kGap), row * (cellSize_.height() + kGap), cellSize_.width(),
-				  cellSize_.height());
+		cell->setGeometry(col * (cellSize_.width() + kGap), row * (cellSize_.height() + kGap),
+				  cellSize_.width(), cellSize_.height());
 		++index;
 	}
 	const int rows = (static_cast<int>(cells_.size()) + columns - 1) / columns;
@@ -190,9 +190,7 @@ void PickerPanel::rebuildBooks()
 		cell->setToolTip(QString::fromUtf8(search::frenchBookName(book).data(),
 						   static_cast<qsizetype>(search::frenchBookName(book).size())));
 		cell->setEnabled(bible_ && bible_->chapterCount(book) > 0); // a book missing from this Bible
-		connect(cell, &QToolButton::clicked, this, [this, book] {
-			emit bookChosen(book);
-		});
+		connect(cell, &QToolButton::clicked, this, [this, book] { emit bookChosen(book); });
 		cells.push_back(cell);
 	}
 	booksGrid_->setCells(cells, QSize(40, 26));
@@ -207,7 +205,8 @@ void PickerPanel::showChapters(int book)
 	for (int chapter = 1; chapter <= bible_->chapterCount(book); ++chapter) {
 		auto *cell = new Cell(QString::number(chapter));
 		cell->setObjectName(QStringLiteral("chapter-%1").arg(chapter));
-		connect(cell, &QToolButton::clicked, this, [this, book, chapter] { emit chapterChosen(book, chapter); });
+		connect(cell, &QToolButton::clicked, this,
+			[this, book, chapter] { emit chapterChosen(book, chapter); });
 		cells.push_back(cell);
 	}
 	chaptersGrid_->setCells(cells, QSize(34, 26));
@@ -231,9 +230,8 @@ void PickerPanel::showVerses(int book, int chapter)
 			const Qt::KeyboardModifiers mods = cell->modifiers();
 			emit verseChosen(book, chapter, verse, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
 		});
-		connect(cell, &Cell::doubleClicked, this, [this, book, chapter, verse] {
-			emit verseChosen(book, chapter, verse, false, true);
-		});
+		connect(cell, &Cell::doubleClicked, this,
+			[this, book, chapter, verse] { emit verseChosen(book, chapter, verse, false, true); });
 		cells.push_back(cell);
 	}
 	versesGrid_->setCells(cells, QSize(34, 26));
@@ -242,7 +240,7 @@ void PickerPanel::showVerses(int book, int chapter)
 }
 
 void PickerPanel::setPosition(const std::optional<search::Passage> &preview, const std::optional<search::Passage> &live,
-			 bool follow)
+			      bool follow)
 {
 	preview_ = preview;
 	live_ = live;
@@ -277,8 +275,8 @@ void PickerPanel::markCells()
 	}
 	for (QToolButton *cell : chaptersGrid_->cells()) {
 		const int chapter = cell->objectName().mid(8).toInt();
-		const bool inPreview = preview_ && preview_->book == chaptersBook_ && chapter >= preview_->startChapter &&
-				       chapter <= preview_->endChapter;
+		const bool inPreview = preview_ && preview_->book == chaptersBook_ &&
+				       chapter >= preview_->startChapter && chapter <= preview_->endChapter;
 		const bool onAir = live_ && live_->book == chaptersBook_ && chapter >= live_->startChapter &&
 				   chapter <= live_->endChapter;
 		setFlag(cell, "preview", inPreview);
@@ -286,7 +284,8 @@ void PickerPanel::markCells()
 	}
 	for (QToolButton *cell : versesGrid_->cells()) {
 		const int verse = cell->objectName().mid(6).toInt();
-		setFlag(cell, "preview", preview_ && preview_->book == versesBook_ && covers(preview_, versesChapter_, verse));
+		setFlag(cell, "preview",
+			preview_ && preview_->book == versesBook_ && covers(preview_, versesChapter_, verse));
 		setFlag(cell, "live", live_ && live_->book == versesBook_ && covers(live_, versesChapter_, verse));
 	}
 }

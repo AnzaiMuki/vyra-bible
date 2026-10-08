@@ -547,7 +547,10 @@ void testRelativeQueries()
 	expectRelative(jn316, "36", 43, 3, 36, 3, 36);
 
 	// Two numbers joined by a range: verses of that chapter.
-	for (const char *q : {"17-19", "17 - 19", "17\xE2\x80\x93" "19", "17 a 19", "17 \xC3\xA0 19", "17 to 19"})
+	for (const char *q : {"17-19", "17 - 19",
+			      "17\xE2\x80\x93"
+			      "19",
+			      "17 a 19", "17 \xC3\xA0 19", "17 to 19"})
 		expectRelative(jn316, q, 43, 3, 17, 3, 19);
 
 	// Chapter and verse, with any separator: same book as the context.

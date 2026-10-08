@@ -175,7 +175,8 @@ bool obs_module_load(void)
 		dock->setAddSourceHandler([portSource]() -> QString {
 			if (!portSource)
 				return text("Error.OverlayPort").arg(kOverlayFirstPort).arg(kOverlayLastPort);
-			const std::string url = QStringLiteral("http://127.0.0.1:%1/").arg(portSource->port()).toStdString();
+			const std::string url =
+				QStringLiteral("http://127.0.0.1:%1/").arg(portSource->port()).toStdString();
 			using vyra::obs::SetupResult;
 			switch (vyra::obs::ensureOverlaySource(url)) {
 			case SetupResult::Created:
@@ -207,7 +208,11 @@ bool obs_module_load(void)
 			if (!target)
 				return;
 			QMetaObject::invokeMethod(
-				target.data(), [target, action] { if (target) target->perform(action); },
+				target.data(),
+				[target, action] {
+					if (target)
+						target->perform(action);
+				},
 				Qt::QueuedConnection);
 		});
 	}

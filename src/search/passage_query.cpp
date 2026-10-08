@@ -322,7 +322,6 @@ QueryResult resolveNumbers(const std::vector<Token> &tokens, std::size_t next, i
 	return ok;
 }
 
-
 } // namespace
 
 namespace {
@@ -357,9 +356,10 @@ QueryResult resolveQuery(std::string_view query, const BibleModule &module, cons
 	// Shorthand relative to the passage being read: "17" is verse 17 of the same chapter.
 	if (context && context->book >= 1 && isRelative(tokens)) {
 		// A leading verse separator (":17", "v17") only says "a verse".
-		while (!tokens.empty() && ((tokens.front().kind == TokenKind::Punct && tokens.front().text != "-" &&
-					    tokens.front().text != ";") ||
-					   (tokens.front().kind == TokenKind::Word && isVerseWord(tokens.front().text))))
+		while (!tokens.empty() &&
+		       ((tokens.front().kind == TokenKind::Punct && tokens.front().text != "-" &&
+			 tokens.front().text != ";") ||
+			(tokens.front().kind == TokenKind::Word && isVerseWord(tokens.front().text))))
 			tokens.erase(tokens.begin());
 		if (tokens.empty())
 			return make(QueryStatus::Incomplete, context->book);
