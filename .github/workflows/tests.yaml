@@ -34,7 +34,17 @@ jobs:
           cmake --build build_tests
 
       - name: Run tests
-        run: ctest --test-dir build_tests --output-on-failure
+        shell: bash
+        run: |
+          set +e
+          ctest --test-dir build_tests --output-on-failure 2>&1 | tee ctest.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            # The job log may not be readable from outside GitHub: also put the failures in annotations.
+            summary=$(grep -E "FAIL|Failed|\*\*\*|Segmentation|ERROR|ASSERT|tests passed" ctest.log | head -25 | tr '\n' '|')
+            echo "::error title=Tests failed::${summary}"
+          fi
+          exit "$status"
 
   bible-audit:
     name: Audit of the Segond 1910 conversion
