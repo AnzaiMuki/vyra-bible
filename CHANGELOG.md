@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.0] - 2026-10-08 - Milestone 10 : optimisation (mesures)
+
+### Ajouté
+- `docs/PERFORMANCE.md` : mesures de chaque geste de l'opérateur et du démarrage, et manière de les refaire.
+- Deux outils de mesure (pas des tests, ils n'échouent jamais) : `tests/dock_bench.cpp` (le dock) et `tests/overlay_bench.py` (la page overlay dans Chromium).
+
+### Conclusion
+- **Aucune modification du plugin** : les mesures montrent que tout est sous 16 ms (le pire geste, un changement de livre dans le sélecteur, prend 16 ms ; le chargement de la Bible 14 ms et environ 5 Mo). Optimiser sans mesure qui le justifie aurait ajouté du risque pour rien.
+- Une première version de la mesure de la page overlay donnait 0 ms : la page ignore un message identique au précédent. Corrigé en variant la référence à chaque appel ; le commentaire dans l'outil l'explique.
+
+### Non vérifié
+- Tout ce qui se passe dans OBS : source Navigateur (CEF), NDI, Windows, PC modeste, diffusion en cours. Les chiffres sont ceux d'une machine Linux de développement.
+
 ## [0.9.0] - 2026-10-08 - Milestone 09 : historique et favoris
 
 ### Ajouté

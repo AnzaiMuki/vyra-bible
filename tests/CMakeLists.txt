@@ -136,6 +136,23 @@ if(Qt6_FOUND)
       VYRA_LOCALE_FR="${VYRA_ROOT}/data/locale/fr-FR.ini"
   )
   target_link_libraries(dock_ui_test PRIVATE Qt6::Widgets Qt6::Test)
+  # Timing tool, not a test: build in Release and run it by hand (see docs/DEVELOPMENT.md).
+  add_executable(
+    dock_bench
+    dock_bench.cpp
+    "${VYRA_ROOT}/ui/vyra_dock.cpp"
+    "${VYRA_ROOT}/ui/stage_panel.cpp"
+    "${VYRA_ROOT}/ui/picker_panel.cpp"
+    "${VYRA_ROOT}/src/bible/bible_module.cpp"
+    "${VYRA_ROOT}/src/search/book_catalog.cpp"
+    "${VYRA_ROOT}/src/search/passage_query.cpp"
+    "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+    "${VYRA_ROOT}/src/stage/paginator.cpp"
+    "${VYRA_ROOT}/src/library/passage_library.cpp"
+  )
+  target_include_directories(dock_bench PRIVATE "${VYRA_ROOT}" "${CMAKE_CURRENT_SOURCE_DIR}/stubs")
+  target_compile_definitions(dock_bench PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv")
+  target_link_libraries(dock_bench PRIVATE Qt6::Widgets Qt6::Test)
   add_test(NAME dock_ui COMMAND dock_ui_test)
   set_tests_properties(dock_ui PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
