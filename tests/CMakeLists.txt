@@ -119,6 +119,7 @@ if(Qt6_FOUND)
     dock_ui_test.cpp
     "${VYRA_ROOT}/ui/vyra_dock.cpp"
     "${VYRA_ROOT}/ui/stage_panel.cpp"
+    "${VYRA_ROOT}/ui/brand.cpp"
     "${VYRA_ROOT}/ui/picker_panel.cpp"
     "${VYRA_ROOT}/src/bible/bible_module.cpp"
     "${VYRA_ROOT}/src/search/book_catalog.cpp"
@@ -142,6 +143,7 @@ if(Qt6_FOUND)
     dock_bench.cpp
     "${VYRA_ROOT}/ui/vyra_dock.cpp"
     "${VYRA_ROOT}/ui/stage_panel.cpp"
+    "${VYRA_ROOT}/ui/brand.cpp"
     "${VYRA_ROOT}/ui/picker_panel.cpp"
     "${VYRA_ROOT}/src/bible/bible_module.cpp"
     "${VYRA_ROOT}/src/search/book_catalog.cpp"

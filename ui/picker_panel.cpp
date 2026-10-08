@@ -42,7 +42,7 @@ public:
 		setText(label);
 		setProperty("pickCell", true); // selector of the style sheet
 		setFocusPolicy(Qt::NoFocus); // the keyboard stays in the search bar
-		setAutoRaise(true);
+		setAutoRaise(false); // the cell is fully drawn by the style sheet
 	}
 
 	/** Keys held when the button was pressed (what the click means depends on them). */

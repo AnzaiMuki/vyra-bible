@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0] - 2026-10-08 - Design du dock (VYRA Studio)
+
+### Modifié
+- Le dock suit le design de VYRA Studio : palette relevée sur la capture de référence, en-tête avec la marque VYRA Concept (dessinée en code), cartes arrondies pour Preview et Program, thème choisi par un contrôle en pilule, onglets en pilule, pied d'état avec point vert/rouge, champ de recherche à focus bleu. Voir `docs/DESIGN.md`.
+- Le bouton Favori devient une étoile à côté du champ de recherche ; les boutons de page (◀ ▶) n'apparaissent que quand le passage à l'antenne a plusieurs pages. Le dock tient à 300 px (minimum mesuré 318 px).
+- Les cases du sélecteur étaient mal dessinées (fond clair) sur certaines cases : corrigé.
+
+### Vérifié (Linux, sans OBS)
+- `dock_ui_test` (162 vérifications), dont un dock étroit (300 px) : aucun bouton écrasé, largeur minimale ≤ 330 px. Contrôle visuel des rendus Qt hors écran (voir `docs/dock-apercu.png`).
+
+### Non vérifié
+- L'aspect réel dans OBS (thèmes Yami, Acri, Rachni, clair), les polices Windows (Segoe UI, Cascadia Mono), l'échelle d'affichage 125/150 %.
+- Les contrastes n'ont pas été mesurés avec un outil d'accessibilité.
+
 ## [0.10.0] - 2026-10-08 - Milestone 10 : optimisation (mesures)
 
 ### Ajouté

@@ -64,6 +64,8 @@ target_sources(
     src/stage/operator_action.hpp
     src/stage/slide.hpp
     src/stage/stage_controller.hpp
+    ui/brand.cpp
+    ui/brand.hpp
     ui/picker_panel.cpp
     ui/picker_panel.hpp
     ui/stage_panel.cpp

@@ -12,8 +12,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <algorithm>
 
 #include <QEvent>
+#include <QFrame>
 #include <QHBoxLayout>
-#include <QComboBox>
 #include <QLabel>
 #include <QListWidget>
 #include <QMetaObject>
@@ -28,6 +28,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include "src/bible/bible_module.hpp"
 #include "src/search/book_catalog.hpp"
 #include "src/stage/stage_controller.hpp"
+#include "ui/brand.hpp"
 #include "ui/picker_panel.hpp"
 #include "ui/stage_panel.hpp"
 
@@ -35,15 +36,137 @@ namespace vyra::ui {
 
 namespace {
 
-// Only our own widgets are styled (by object name). Colors of the rest follow the OBS theme.
+// The look of VYRA Studio (same palette, pill controls, rounded cards) at the density of an OBS dock.
+// The whole dock is styled, so it reads the same on every OBS theme; nothing here leaks outside the dock.
+//   background #0e1318, card #151c23, screen #06090c, border #293036, control #212a31,
+//   accent blue #2e9bff, ok green #33c77b, dim text #5e6b78 / #8795a3, ON AIR red #d92d20.
 constexpr const char *kStyleSheet = R"(
-#stageTitle {
+#vyraDock {
+	background-color: #0e1318;
+}
+QLabel {
+	color: #c9d3dd;
+}
+#brandTitle {
+	color: #f3f6f9;
+	font-size: 13px;
+	font-weight: 700;
+}
+#brandSub {
+	color: #5e6b78;
+	font-size: 9px;
 	font-weight: 600;
+	letter-spacing: 1.5px;
+}
+QLineEdit {
+	background-color: #0b1015;
+	border: 1px solid #293036;
+	border-radius: 8px;
+	padding: 7px 10px;
+	color: #f3f6f9;
+	font-size: 13px;
+	selection-background-color: #2e9bff;
+	selection-color: #ffffff;
+}
+QLineEdit:focus {
+	border: 1px solid #2e9bff;
+}
+QLineEdit:disabled {
+	color: #4a5663;
+}
+QPushButton {
+	background-color: #212a31;
+	color: #d5dde5;
+	border: none;
+	border-radius: 7px;
+	padding: 6px 9px;
+	font-weight: 600;
+}
+QPushButton:hover {
+	background-color: #2a353e;
+}
+QPushButton:pressed {
+	background-color: #1a2229;
+}
+QPushButton:disabled {
+	background-color: #161d23;
+	color: #4a5663;
+}
+#onAirButton {
+	font-weight: 800;
 	letter-spacing: 1px;
+	min-height: 20px;
+	padding: 6px 12px;
+}
+#onAirButton:enabled {
+	background-color: #d92d20;
+	color: #ffffff;
+}
+#onAirButton:enabled:hover {
+	background-color: #e5382b;
+}
+#favoriteButton {
+	font-size: 15px;
+	padding: 3px 10px;
+}
+#favoriteButton[favorite="true"] {
+	color: #e0a800;
+}
+#addSourceButton {
+	background-color: transparent;
+	color: #2e9bff;
+	padding: 2px 4px;
+	font-weight: 600;
+}
+#addSourceButton:hover {
+	color: #6cb8ff;
+	background-color: transparent;
+}
+QFrame[segmentedControl="true"] {
+	background-color: #212a31;
+	border: 1px solid #212a31;
+	border-radius: 15px;
+}
+QFrame[segmentedControl="true"] QPushButton {
+	background-color: transparent;
+	color: #8795a3;
+	border: 1px solid transparent;
+	border-radius: 12px;
+	padding: 4px 9px;
+}
+QFrame[segmentedControl="true"] QPushButton:hover:!checked {
+	color: #d5dde5;
+}
+QFrame[segmentedControl="true"] QPushButton:checked {
+	background-color: #2e9bff;
+	border: 1px solid #2e9bff;
+	color: #ffffff;
+}
+QFrame[segmentedControl="true"] QPushButton:disabled {
+	color: #4a5663;
+}
+#stageCard {
+	background-color: #151c23;
+	border: 1px solid #293036;
+	border-radius: 10px;
+}
+#stageTitle {
+	background-color: #11171c;
+	color: #8795a3;
+	border-radius: 6px;
+	padding: 2px 8px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 1.5px;
+}
+#stageTitle[live="true"] {
+	background-color: #3a1512;
+	color: #ff6b5e;
 }
 #stagePreviewScreen, #stageProgramScreen {
-	background-color: #0b0d10;
-	border: 1px solid #2a2f36;
+	background-color: #06090c;
+	border: 1px solid #1c242b;
+	border-radius: 8px;
 }
 #stagePreviewScreen[live="true"], #stageProgramScreen[live="true"] {
 	border: 2px solid #d92d20;
@@ -53,45 +176,111 @@ constexpr const char *kStyleSheet = R"(
 	font-size: 12px;
 }
 #stageCaption {
-	color: #8b95a1;
+	color: #5e6b78;
 	font-size: 11px;
 }
-#onAirButton {
-	font-weight: 700;
-	letter-spacing: 1px;
-	min-height: 28px;
+#pageLabel {
+	color: #8795a3;
+	font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+	font-size: 11px;
 }
-#onAirButton:enabled {
-	background-color: #d92d20;
+QTabWidget::pane {
+	border: none;
+}
+QTabBar::tab {
+	background-color: transparent;
+	color: #8795a3;
+	padding: 5px 9px;
+	margin-right: 2px;
+	border-radius: 11px;
+	font-weight: 600;
+}
+QTabBar::tab:hover:!selected {
+	color: #d5dde5;
+}
+QTabBar::tab:selected {
+	background-color: #212a31;
 	color: #ffffff;
 }
-#favoriteButton[favorite="true"] {
-	color: #e0a800;
+QListWidget {
+	background-color: #0b1015;
+	border: 1px solid #293036;
+	border-radius: 8px;
+	color: #d5dde5;
+	padding: 3px;
+	outline: none;
+}
+QListWidget::item {
+	padding: 5px 8px;
+	border-radius: 5px;
+}
+QListWidget::item:hover {
+	background-color: #1a222a;
+}
+QListWidget::item:selected {
+	background-color: #12304f;
+	color: #ffffff;
+}
+QScrollBar:vertical {
+	background: transparent;
+	width: 8px;
+	margin: 0;
+}
+QScrollBar::handle:vertical {
+	background: #2a343c;
+	border-radius: 4px;
+	min-height: 24px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+	height: 0;
+}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+	background: transparent;
+}
+QScrollArea, QScrollArea > QWidget > QWidget {
+	background: transparent;
+	border: none;
+}
+QToolTip {
+	background-color: #151c23;
+	color: #d5dde5;
+	border: 1px solid #293036;
+	padding: 4px 6px;
 }
 #pickerPanel QPushButton {
-	color: palette(text);
+	background-color: transparent;
+	color: #8795a3;
 	border: none;
 	border-bottom: 2px solid transparent;
-	padding: 2px 8px;
+	border-radius: 0;
+	padding: 3px 8px;
+}
+#pickerPanel QPushButton:hover:!checked {
+	color: #d5dde5;
 }
 #pickerPanel QPushButton:checked {
-	font-weight: 700;
-	border-bottom: 2px solid #d6a84a;
+	color: #ffffff;
+	border-bottom: 2px solid #2e9bff;
 }
 #pickerPanel QPushButton:disabled {
-	color: palette(midlight);
+	color: #3a4550;
 }
 #pickerPanel QToolButton {
-	border: 1px solid palette(mid);
-	border-radius: 2px;
+	background-color: #1a222a;
+	color: #c9d3dd;
+	border: 1px solid #293036;
+	border-radius: 5px;
 	font-size: 11px;
 }
+#pickerPanel QToolButton:hover {
+	border-color: #2e9bff;
+}
 #pickerPanel QToolButton:disabled {
-	color: palette(midlight);
+	color: #3a4550;
 }
 #pickerPanel QToolButton[preview="true"] {
-	background-color: #1f3b63;
-	border-color: #4c8dff;
+	background-color: #12304f;
+	border-color: #2e9bff;
 	color: #ffffff;
 }
 #pickerPanel QToolButton[live="true"] {
@@ -99,12 +288,23 @@ constexpr const char *kStyleSheet = R"(
 	border-color: #f04438;
 	color: #ffffff;
 }
+#footer {
+	background-color: #080b0e;
+	border-radius: 8px;
+}
 #dockStatus {
-	color: #8b95a1;
+	color: #8795a3;
 	font-size: 11px;
 }
 #dockStatus[error="true"] {
-	color: #f04438;
+	color: #ff6b5e;
+}
+#statusDot {
+	background-color: #33c77b;
+	border-radius: 4px;
+}
+#statusDot[error="true"] {
+	background-color: #f04438;
 }
 )";
 
@@ -191,6 +391,9 @@ void VyraDock::setStatus(const QString &text, bool isError)
 	// A changed dynamic property is not picked up by the style sheet until the widget is re-polished.
 	statusLabel_->style()->unpolish(statusLabel_);
 	statusLabel_->style()->polish(statusLabel_);
+	statusDot_->setProperty("error", isError);
+	statusDot_->style()->unpolish(statusDot_);
+	statusDot_->style()->polish(statusDot_);
 }
 
 VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(parent), bible_(bible)
@@ -204,12 +407,36 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	root->setContentsMargins(8, 8, 8, 8);
 	root->setSpacing(8);
 
+	// Header: the VYRA mark and the name, as in VYRA Studio
+	auto *header = new QHBoxLayout();
+	header->setSpacing(8);
+	header->addWidget(new BrandMark(30, this));
+	auto *brandText = new QVBoxLayout();
+	brandText->setSpacing(0);
+	auto *brandTitle = new QLabel(text("Brand.Title"), this);
+	brandTitle->setObjectName(QStringLiteral("brandTitle"));
+	auto *brandSub = new QLabel(text("Brand.Sub"), this);
+	brandSub->setObjectName(QStringLiteral("brandSub"));
+	brandText->addWidget(brandTitle);
+	brandText->addWidget(brandSub);
+	header->addLayout(brandText);
+	header->addStretch(1);
+	root->addLayout(header);
+
 	searchEdit_ = new QLineEdit(this);
 	searchEdit_->setPlaceholderText(text("Dock.Search.Placeholder"));
 	searchEdit_->setClearButtonEnabled(true);
 	searchEdit_->setToolTip(text("Tooltip.Search"));
 	searchEdit_->installEventFilter(this);
-	root->addWidget(searchEdit_);
+	favoriteButton_ = new QPushButton(text("Button.Favorite"), this);
+	favoriteButton_->setObjectName(QStringLiteral("favoriteButton"));
+	favoriteButton_->setToolTip(text("Tooltip.Favorite"));
+	favoriteButton_->setFocusPolicy(Qt::NoFocus);
+	auto *searchRow = new QHBoxLayout();
+	searchRow->setSpacing(6);
+	searchRow->addWidget(searchEdit_, 1);
+	searchRow->addWidget(favoriteButton_);
+	root->addLayout(searchRow);
 
 	// Control-room monitors
 	auto *stages = new QHBoxLayout();
@@ -241,11 +468,6 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	buttons->addWidget(previousButton_);
 	buttons->addWidget(nextButton_);
 	buttons->addWidget(hideButton_);
-	favoriteButton_ = new QPushButton(text("Button.Favorite"), this);
-	favoriteButton_->setObjectName(QStringLiteral("favoriteButton"));
-	favoriteButton_->setToolTip(text("Tooltip.Favorite"));
-	favoriteButton_->setFocusPolicy(Qt::NoFocus);
-	buttons->addWidget(favoriteButton_);
 	buttons->addStretch(1);
 	buttons->addWidget(onAirButton_);
 	root->addLayout(buttons);
@@ -253,27 +475,34 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	// Display: theme and pages of the PROGRAM
 	auto *display = new QHBoxLayout();
 	display->setSpacing(6);
-	themeBox_ = new QComboBox(this);
+	themeBox_ = new SegmentedControl({text("Theme.Lower"), text("Theme.Full"), text("Theme.Minimal")}, this);
 	themeBox_->setObjectName(QStringLiteral("themeBox"));
-	themeBox_->addItem(text("Theme.Lower"));
-	themeBox_->addItem(text("Theme.Full"));
-	themeBox_->addItem(text("Theme.Minimal"));
 	themeBox_->setToolTip(text("Tooltip.Theme"));
-	themeBox_->setFocusPolicy(Qt::NoFocus);
 	pagePreviousButton_ = new QPushButton(text("Button.PagePrevious"), this);
 	pageNextButton_ = new QPushButton(text("Button.PageNext"), this);
 	pagePreviousButton_->setToolTip(text("Tooltip.PagePrevious"));
 	pageNextButton_->setToolTip(text("Tooltip.PageNext"));
 	pagePreviousButton_->setFocusPolicy(Qt::NoFocus);
 	pageNextButton_->setFocusPolicy(Qt::NoFocus);
+	pagePreviousButton_->setObjectName(QStringLiteral("pagePreviousButton"));
+	pageNextButton_->setObjectName(QStringLiteral("pageNextButton"));
 	pageLabel_ = new QLabel(this);
 	pageLabel_->setObjectName(QStringLiteral("pageLabel"));
 	display->addWidget(themeBox_);
 	display->addStretch(1);
-	display->addWidget(pageLabel_);
-	display->addWidget(pagePreviousButton_);
-	display->addWidget(pageNextButton_);
 	root->addLayout(display);
+
+	// Page bar: only there while the passage on the air has several pages (keeps the dock narrow otherwise).
+	pageBar_ = new QWidget(this);
+	auto *pageLayout = new QHBoxLayout(pageBar_);
+	pageLayout->setContentsMargins(0, 0, 0, 0);
+	pageLayout->setSpacing(6);
+	pageLayout->addWidget(pageLabel_);
+	pageLayout->addStretch(1);
+	pageLayout->addWidget(pagePreviousButton_);
+	pageLayout->addWidget(pageNextButton_);
+	pageBar_->hide();
+	root->addWidget(pageBar_);
 
 	picker_ = new PickerPanel(bible_, this);
 	picker_->setMinimumHeight(110);
@@ -316,10 +545,21 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 			setStatus(addSourceHandler_(), false);
 	});
 
-	statusLabel_ = new QLabel(this);
+	// Footer: a status dot (green = fine, red = a problem) and the status text, as in VYRA Studio
+	auto *footer = new QFrame(this);
+	footer->setObjectName(QStringLiteral("footer"));
+	auto *footerLayout = new QHBoxLayout(footer);
+	footerLayout->setContentsMargins(10, 7, 10, 7);
+	footerLayout->setSpacing(8);
+	statusDot_ = new QLabel(footer);
+	statusDot_->setObjectName(QStringLiteral("statusDot"));
+	statusDot_->setFixedSize(8, 8);
+	statusLabel_ = new QLabel(footer);
 	statusLabel_->setObjectName(QStringLiteral("dockStatus"));
 	statusLabel_->setWordWrap(true);
-	root->addWidget(statusLabel_);
+	footerLayout->addWidget(statusDot_, 0, Qt::AlignTop | Qt::AlignHCenter);
+	footerLayout->addWidget(statusLabel_, 1);
+	root->addWidget(footer);
 
 	connect(picker_, &PickerPanel::bookChosen, this, [this](int book) {
 		if (!stage_)
@@ -364,7 +604,7 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	}
 	connect(pagePreviousButton_, &QPushButton::clicked, this, [this] { changePage(false); });
 	connect(pageNextButton_, &QPushButton::clicked, this, [this] { changePage(true); });
-	connect(themeBox_, QOverload<int>::of(&QComboBox::activated), this, [this](int i) { changeTheme(i); });
+	connect(themeBox_, &SegmentedControl::activated, this, [this](int i) { changeTheme(i); });
 
 	searchEdit_->setEnabled(stage_ != nullptr);
 	refresh();
@@ -668,6 +908,8 @@ void VyraDock::refresh(bool follow)
 	hideButton_->setEnabled(have && stage_->programLive());
 	onAirButton_->setEnabled(have && stage_->preview().has_value());
 	themeBox_->setEnabled(have);
+	if (have)
+		themeBox_->setCurrentIndex(static_cast<int>(stage_->theme()));
 	const bool previewed = have && stage_->preview().has_value();
 	const bool fav = previewed && library_.isFavorite(*stage_->preview());
 	favoriteButton_->setEnabled(previewed);
@@ -680,8 +922,7 @@ void VyraDock::refresh(bool follow)
 	pageLabel_->setText(live && pages > 1 ? text("Status.Page").arg(page + 1).arg(pages) : QString());
 	pagePreviousButton_->setEnabled(live && page > 0);
 	pageNextButton_->setEnabled(live && page + 1 < pages);
-	pagePreviousButton_->setVisible(pages > 1);
-	pageNextButton_->setVisible(pages > 1);
+	pageBar_->setVisible(pages > 1);
 }
 
 bool VyraDock::eventFilter(QObject *watched, QEvent *event)

@@ -11,7 +11,6 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QApplication>
 #include <QFile>
-#include <QComboBox>
 #include <QListWidget>
 #include <QTabWidget>
 #include <QLabel>
@@ -28,6 +27,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include "src/bible/bible_module.hpp"
 #include "src/search/passage_query.hpp"
 #include "src/stage/stage_controller.hpp"
+#include "ui/brand.hpp"
 #include "ui/vyra_dock.hpp"
 #include "tests/check.hpp"
 static QMap<std::string, std::string> g;
@@ -35,7 +35,7 @@ extern "C" const char *obs_module_text(const char *k){auto it=g.find(k);return i
 extern "C" void obs_log(int, const char *, ...) {}
 static QString status(QWidget&d){return d.findChild<QLabel*>("dockStatus")->text();}
 static QList<QLabel*> contents(QWidget&d){return d.findChildren<QLabel*>("stageContent");}
-static QPushButton* btn(QWidget&d,int i){return d.findChildren<QPushButton*>().at(i);} // 0 prev,1 next,2 hide,3 onair
+static QPushButton* btn(QWidget&d,int i){QList<QPushButton*> r; for(auto*b:d.findChildren<QPushButton*>()) if(b->objectName()!="favoriteButton") r<<b; return r.at(i);} // 0 prev,1 next,2 hide,3 onair
 int main(int c,char**v){QApplication app(c,v);
  QFile f(VYRA_LOCALE_FR);f.open(QIODevice::ReadOnly|QIODevice::Text);QTextStream in(&f);in.setEncoding(QStringConverter::Utf8);
  while(!in.atEnd()){QString l=in.readLine();int e=l.indexOf('=');if(e<0)continue;QString val=l.mid(e+1).trimmed();if(val.startsWith('"'))val=val.mid(1,val.size()-2);g[l.left(e).toStdString()]=val.toStdString();}
@@ -166,9 +166,9 @@ int main(int c,char**v){QApplication app(c,v);
   vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();
   int heard=0; std::string theme; std::size_t page=99,pages=0;
   d.setProgramListener([&](const vyra::stage::StageController&s){ ++heard; theme=vyra::stage::themeName(s.theme()); page=s.programPage(); pages=s.programPages().size(); });
-  auto*edit=d.findChild<QLineEdit*>(); auto*box=d.findChild<QComboBox*>("themeBox"); auto*lab=d.findChild<QLabel*>("pageLabel");
+  auto*edit=d.findChild<QLineEdit*>(); auto*box=d.findChild<vyra::ui::SegmentedControl*>("themeBox"); auto*lab=d.findChild<QLabel*>("pageLabel");
   QPushButton*pp=nullptr,*pn=nullptr;
-  for(auto*b:d.findChildren<QPushButton*>()){ if(b->text().contains("Page")&&b->text().startsWith(QString::fromUtf8("\xE2\x97\x80"))) pp=b; else if(b->text().startsWith("Page")) pn=b; }
+  pp=d.findChild<QPushButton*>("pagePreviousButton"); pn=d.findChild<QPushButton*>("pageNextButton");
   CHECK(box && lab && pp && pn && box->count()==3);
   CHECK(theme=="lower" && !pn->isVisible());
   QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
@@ -188,7 +188,7 @@ int main(int c,char**v){QApplication app(c,v);
   for(std::size_t i=1;i<pages;++i) QTest::keyClick(edit,Qt::Key_PageDown);
   CHECK(page==pages-1 && !pn->isEnabled()); const int h3=heard; QTest::keyClick(edit,Qt::Key_PageDown); CHECK(heard==h3);
   // a theme change is heard, re-cuts the pages (page 1) and is kept for the next passages
-  box->setCurrentIndex(1); QMetaObject::invokeMethod(box,"activated",Q_ARG(int,1)); app.processEvents();
+  CHECK(box->currentIndex()==0); QTest::mouseClick(box->segment(1),Qt::LeftButton); app.processEvents(); CHECK(box->currentIndex()==1);
   CHECK(theme=="full" && page==0 && heard==h3+1);
   QTest::keyClick(edit,Qt::Key_Escape);                              // hidden: page keys do nothing
   const int h4=heard; QTest::keyClick(edit,Qt::Key_PageDown); CHECK(heard==h4 && !pn->isEnabled());
@@ -280,6 +280,13 @@ int main(int c,char**v){QApplication app(c,v);
     CHECK(d.findChild<QListWidget*>("favoritesList")->count()==200 && status(d).contains("200"));
   }
   fs::remove_all(dir);
+ }
+ { // a narrow dock (OBS docks are often 300 px wide): nothing must be cut or overlap
+  vyra::ui::VyraDock d(&bible); d.resize(300,560); d.show(); app.processEvents();
+  auto*edit=d.findChild<QLineEdit*>(); QTest::keyClicks(edit,"Ps 119:1-4"); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier); app.processEvents();
+  for(auto*b:d.findChildren<QPushButton*>()) if(b->isVisible()) CHECK(b->width()>=b->sizeHint().width()-2);   // no button squeezed below its text
+  CHECK(d.minimumSizeHint().width()<=330);
+  if(out) d.grab().save(QString("%1/m11_narrow.png").arg(out));
  }
  { // the "add the source to OBS" button exists only when something can do it, and shows what happened
   vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();

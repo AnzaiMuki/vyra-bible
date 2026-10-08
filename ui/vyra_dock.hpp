@@ -25,7 +25,6 @@ class StageController;
 class QLineEdit;
 class QPushButton;
 class QLabel;
-class QComboBox;
 class QListWidget;
 class QTabWidget;
 
@@ -33,6 +32,7 @@ namespace vyra::ui {
 
 class StagePanel;
 class PickerPanel;
+class SegmentedControl;
 
 /**
  * The operator dock, laid out as a control room:
@@ -146,7 +146,9 @@ private:
 	QListWidget *favoritesList_ = nullptr;
 	QPushButton *clearHistoryButton_ = nullptr;
 	QPushButton *favoriteButton_ = nullptr;
-	QComboBox *themeBox_ = nullptr;
+	SegmentedControl *themeBox_ = nullptr;
+	QLabel *statusDot_ = nullptr;
+	QWidget *pageBar_ = nullptr;
 	QPushButton *pagePreviousButton_ = nullptr;
 	QPushButton *pageNextButton_ = nullptr;
 	QLabel *pageLabel_ = nullptr;
