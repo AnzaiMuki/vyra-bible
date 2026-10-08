@@ -37,6 +37,14 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 LicenseFile=..\LICENSE
+SetupIconFile=vyra.ico
+UninstallDisplayIcon={app}\data\obs-plugins\vyra-bible\vyra.ico
+WizardImageFile=wizard-large-1x.bmp,wizard-large-2x.bmp
+WizardSmallImageFile=wizard-small-55.bmp,wizard-small-110.bmp
+AppCopyright=Copyright (C) 2026 VYRA Concept
+VersionInfoCompany={#Publisher}
+VersionInfoDescription={#AppName} setup
+VersionInfoProductName={#AppName}
 OutputDir=..\release
 OutputBaseFilename=VYRA-Bible-Setup-{#AppVersion}
 Compression=lzma2
@@ -47,8 +55,8 @@ CloseApplications=yes
 RestartApplications=no
 
 [Languages]
-Name: "french"; MessagesFile: "compiler:Languages\French.isl"
-Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"; InfoAfterFile: "after-fr.txt"
+Name: "english"; MessagesFile: "compiler:Default.isl"; InfoAfterFile: "after-en.txt"
 
 [CustomMessages]
 french.ObsNotFound=Le dossier choisi ne contient pas OBS Studio 64 bits (bin\64bit\obs64.exe est introuvable).%n%nChoisissez le dossier d'installation d'OBS Studio, par exemple C:\Program Files\obs-studio.
@@ -59,6 +67,8 @@ english.SelectDirHint=OBS Studio installation folder
 [Files]
 Source: "{#StageDir}\vyra-bible\bin\64bit\*"; DestDir: "{app}\obs-plugins\64bit"; Flags: ignoreversion
 Source: "{#StageDir}\vyra-bible\data\*"; DestDir: "{app}\data\obs-plugins\vyra-bible"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+Source: "vyra.ico"; DestDir: "{app}\data\obs-plugins\vyra-bible"; Flags: ignoreversion
 
 [Code]
 // Finds the OBS Studio folder. The OBS installer records it in the registry;

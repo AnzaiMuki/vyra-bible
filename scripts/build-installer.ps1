@@ -84,4 +84,22 @@ Invoke-Checked "Build setup (Inno Setup)" {
 
 $setup = Join-Path $root "release\VYRA-Bible-Setup-$Version.exe"
 if (-not (Test-Path $setup)) { throw "Expected setup not found: $setup" }
+
+# A zip for people who cannot (or do not want to) run a setup: portable OBS, or no administrator rights.
+# It holds the OBS folder layout, so it is simply extracted over the OBS folder.
+$zip = Join-Path $root "release\VYRA-Bible-$Version-manual.zip"
+$zipRoot = Join-Path $root "release\zip"
+if (Test-Path $zipRoot) { Remove-Item $zipRoot -Recurse -Force }
+New-Item -ItemType Directory -Force -Path (Join-Path $zipRoot "obs-plugins\64bit"), (Join-Path $zipRoot "data\obs-plugins\vyra-bible") | Out-Null
+Copy-Item (Join-Path $stage "vyra-bible\bin\64bit\*") (Join-Path $zipRoot "obs-plugins\64bit") -Recurse
+Copy-Item (Join-Path $stage "vyra-bible\data\*") (Join-Path $zipRoot "data\obs-plugins\vyra-bible") -Recurse
+Copy-Item (Join-Path $root "docs\INSTALLATION.md") (Join-Path $zipRoot "LISEZMOI-INSTALLATION.md")
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path (Join-Path $zipRoot "*") -DestinationPath $zip
+Remove-Item $zipRoot -Recurse -Force
+
+# Checksums, so that a download can be checked.
+$sums = foreach ($f in @($setup, $zip)) { "{0}  {1}" -f (Get-FileHash $f -Algorithm SHA256).Hash.ToLower(), (Split-Path $f -Leaf) }
+Set-Content -Path (Join-Path $root "release\SHA256SUMS.txt") -Value $sums -Encoding ascii
+Write-Host ($sums -join [Environment]::NewLine)
 Write-Host "Done: $setup" -ForegroundColor Green

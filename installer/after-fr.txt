@@ -1,0 +1,10 @@
+﻿VYRA Bible est installé.
+
+1. Démarrez OBS Studio.
+2. Menu « Docks » : cochez « VYRA Bible ».
+3. Dans le dock, cliquez « Ajouter la source dans OBS » : la source qui affiche les versets est créée pour vous.
+4. Tapez un passage (par exemple « Jn 3:16 »), Entrée pour prévisualiser, Ctrl+Entrée pour mettre à l'antenne.
+
+Raccourcis clavier globaux : OBS > Paramètres > Raccourcis, lignes « VYRA Bible : … » (aucune touche n'est attribuée par défaut).
+
+Vos favoris et votre historique sont conservés quand vous mettez à jour ou désinstallez le plugin.
