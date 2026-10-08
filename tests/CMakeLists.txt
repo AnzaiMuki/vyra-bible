@@ -251,3 +251,25 @@ else()
 endif()
 
 add_test(NAME library COMMAND library_test)
+
+add_executable(
+  stress_test
+  stress_test.cpp
+  "${VYRA_ROOT}/src/bible/bible_module.cpp"
+  "${VYRA_ROOT}/src/search/book_catalog.cpp"
+  "${VYRA_ROOT}/src/search/passage_query.cpp"
+  "${VYRA_ROOT}/src/stage/stage_controller.cpp"
+  "${VYRA_ROOT}/src/stage/paginator.cpp"
+  "${VYRA_ROOT}/src/library/passage_library.cpp"
+  "${VYRA_ROOT}/src/overlay/overlay_frame.cpp"
+)
+target_include_directories(stress_test PRIVATE "${VYRA_ROOT}")
+target_compile_definitions(stress_test PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv")
+if(MSVC)
+  target_compile_options(stress_test PRIVATE /W4 /utf-8)
+else()
+  target_compile_options(stress_test PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_test(NAME stress COMMAND stress_test)
+set_tests_properties(stress PROPERTIES TIMEOUT 600)

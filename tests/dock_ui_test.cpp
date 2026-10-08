@@ -21,12 +21,15 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <QTextStream>
 #include <QtTest/QtTest>
 #include <cstdio>
+#include <cstring>
+#include <random>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include "src/bible/bible_module.hpp"
 #include "src/search/passage_query.hpp"
 #include "src/stage/stage_controller.hpp"
+#include "src/library/passage_library.hpp"
 #include "ui/brand.hpp"
 #include "ui/vyra_dock.hpp"
 #include "tests/check.hpp"
@@ -280,6 +283,36 @@ int main(int c,char**v){QApplication app(c,v);
     CHECK(d.findChild<QListWidget*>("favoritesList")->count()==200 && status(d).contains("200"));
   }
   fs::remove_all(dir);
+ }
+ { // key storm: thousands of random keys; the air only changes on Ctrl+Enter / Esc / page keys, never on anything else
+  vyra::ui::VyraDock d(&bible); d.resize(360,600); d.show(); app.processEvents();
+  int heard=0; bool validProgram=true;
+  d.setProgramListener([&](const vyra::stage::StageController&s){ ++heard; if(s.program() && !vyra::library::isValidPassage(*s.program(),bible)) validProgram=false; });
+  auto*edit=d.findChild<QLineEdit*>(); std::mt19937 rng(11);
+  const char* chars="abcdefghijklmnopqrstuvwxyz0123456789 :-;,.";
+  int airKeys=0;
+  for(int i=0;i<4000;++i){
+    const int before=heard; bool mayChangeAir=false;
+    switch(rng()%14){
+      case 0: QTest::keyClick(edit,Qt::Key_Return); break;
+      case 1: QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier); mayChangeAir=true; ++airKeys; break;
+      case 2: QTest::keyClick(edit,Qt::Key_Up); break;
+      case 3: QTest::keyClick(edit,Qt::Key_Down); break;
+      case 4: QTest::keyClick(edit,Qt::Key_PageUp); mayChangeAir=true; break;
+      case 5: QTest::keyClick(edit,Qt::Key_PageDown); mayChangeAir=true; break;
+      case 6: QTest::keyClick(edit,Qt::Key_Escape); mayChangeAir=true; break;
+      case 7: QTest::keyClick(edit,Qt::Key_D,Qt::ControlModifier); break;
+      case 8: QTest::keyClick(edit,Qt::Key_Backspace); break;
+      case 9: edit->selectAll(); break;
+      case 10: QTest::keyClicks(edit,"Ps 119"); break;
+      default: QTest::keyClick(edit,chars[rng()%strlen(chars)]); break;
+    }
+    if(!mayChangeAir) CHECK(heard==before);
+    if(i%500==0) app.processEvents();
+  }
+  app.processEvents();
+  CHECK(validProgram && airKeys>100 && heard>10);
+  CHECK(!d.findChild<QLabel*>("dockStatus")->text().isEmpty());
  }
  { // a narrow dock (OBS docks are often 300 px wide): nothing must be cut or overlap
   vyra::ui::VyraDock d(&bible); d.resize(300,560); d.show(); app.processEvents();

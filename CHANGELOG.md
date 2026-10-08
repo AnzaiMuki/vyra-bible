@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.12.0] - 2026-10-08 - Milestone 11 : tests et stabilité
+
+### Ajouté
+- `tests/stress_test.cpp` (environ 1,6 million de vérifications, déterministe) : saisies aléatoires et hostiles (octets invalides, nombres géants, textes d'un million de caractères), 200 000 opérations au hasard sur Preview/Program/pages/thème avec les règles vérifiées après chacune (seul ON AIR change le passage à l'antenne, un passage absent de la Bible n'est jamais accepté, pages toujours valides), pagination sans perte de lettres ni coupure dans un caractère UTF-8, fichiers d'historique et de Bible corrompus.
+- `overlay_server_test` : 150 requêtes hostiles (octets au hasard, en-têtes de 200 Ko, 5 000 en-têtes, chemins piégés), un client muet coupé par le délai, 40 rondes de flux qui arrivent et partent pendant les publications.
+- `dock_ui_test` : 4 000 touches au hasard dans le dock ; seules Ctrl+Entrée, Échap et les touches de page peuvent changer l'antenne.
+
+### Vérifié (Linux, AddressSanitizer + UBSan)
+- Tout passe. Quatre altérations volontaires du code (accepter un passage invalide, Masquer qui efface le passage, pagination qui perd une lettre, flèche qui touche l'antenne) sont chacune détectée par ces tests, puis retirées.
+- Aucun nouveau défaut du plugin n'a été trouvé par ces essais.
+
+### Non vérifié
+- Une longue durée de fonctionnement (heures) dans OBS, la mémoire dans le temps, un vrai réseau d'église : ce test est à faire sur place (point 35 de la liste de contrôle).
+- Le comportement quand OBS ferme le dock en pleine action, ou quand OBS plante.
+
 ## [0.11.0] - 2026-10-08 - Design du dock (VYRA Studio)
 
 ### Modifié

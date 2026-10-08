@@ -17,6 +17,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdio>
 
+#include <random>
 #include "src/overlay/http_routes.hpp"
 #include "src/overlay/overlay_server.hpp"
 #include "tests/check.hpp"
@@ -273,6 +274,75 @@ void testPublishLargeFrameManyTimes()
 	CHECK(ordered);
 }
 
+void testHostileClients()
+{
+	OverlayServer server(VYRA_OVERLAY_DIR);
+	CHECK(server.start(18490, 18499));
+	const quint16 p = server.port();
+	server.publish(onAir(1, "Jean 3:16", "Car Dieu"));
+
+	// Random bytes and hostile requests: whatever happens, the server must answer the next honest client.
+	std::mt19937 rng(7);
+	for (int i = 0; i < 150; ++i) {
+		QByteArray raw;
+		switch (i % 6) {
+		case 0: // pure garbage
+			for (int k = 0; k < 200; ++k)
+				raw.append(static_cast<char>(rng() & 0xff));
+			raw += "\r\n\r\n";
+			break;
+		case 1: // enormous header
+			raw = "GET /state HTTP/1.1\r\nX-Big: " + QByteArray(200000, 'a') + "\r\n\r\n";
+			break;
+		case 2: // many headers
+			raw = "GET /state HTTP/1.1\r\n";
+			for (int k = 0; k < 5000; ++k)
+				raw += "X-" + QByteArray::number(k) + ": v\r\n";
+			raw += "\r\n";
+			break;
+		case 3: // bad request lines
+			raw = QByteArray("GET\r\n\r\n").repeated(1) + "\r\n";
+			break;
+		case 4: // traversal and odd paths
+			raw = "GET /%2e%2e/%2e%2e/etc/passwd HTTP/1.1\r\n\r\n";
+			break;
+		default: // a NUL in the path, bad version
+			raw = QByteArray("GET /st\0ate HTTP/9.9\r\n\r\n", 24);
+			break;
+		}
+		const QByteArray answer = exchange(p, raw);
+		// Either refused cleanly or served: never a crash, never a file outside the overlay folder.
+		CHECK(!answer.contains("root:"));
+		CHECK(answer != "CONNECT-FAILED");
+	}
+	// A client that sends garbage and never finishes is dropped by the timeout, while others are served.
+	{
+		QTcpSocket silent;
+		silent.connectToHost(QHostAddress::LocalHost, p);
+		CHECK(waitFor([&] { return silent.state() == QAbstractSocket::ConnectedState; }));
+		silent.write("\x01\x02 garbage without end");
+		CHECK(get(p, "/state").startsWith("HTTP/1.1 200 OK")); // served meanwhile
+		CHECK(waitFor([&] { silent.readAll(); return silent.state() == QAbstractSocket::UnconnectedState; }, 8000));
+	}
+	const QByteArray state = get(p, "/state");
+	CHECK(state.startsWith("HTTP/1.1 200 OK") && bodyOf(state).contains("\"reference\":\"Jean 3:16\""));
+
+	// Streams that come and go while frames are published: no client is left behind, nothing crashes.
+	for (int round = 0; round < 40; ++round) {
+		std::vector<std::unique_ptr<Stream>> streams;
+		for (int k = 0; k < 5; ++k) {
+			streams.push_back(std::make_unique<Stream>());
+			streams.back()->open(p);
+		}
+		server.publish(onAir(static_cast<unsigned long long>(100 + round), "Psaumes 23", "L'Éternel est mon berger"));
+		if (round % 2)
+			waitFor([&] { return false; }, 10);
+		// the streams are destroyed here, some before their first message arrived
+	}
+	CHECK(waitFor([&] { return server.clientCount() == 0; }, 5000));
+	CHECK(get(p, "/state").startsWith("HTTP/1.1 200 OK"));
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -285,5 +355,6 @@ int main(int argc, char **argv)
 	testStateAndStream();
 	testManyConnections();
 	testPublishLargeFrameManyTimes();
+	testHostileClients();
 	return vyra::testing::finish();
 }
