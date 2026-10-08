@@ -1,6 +1,6 @@
 # Recherche d'un passage
 
-Le moteur (`src/search/`) transforme ce que l'opérateur tape en un passage vérifié. Il ne dépend ni d'OBS ni de Qt. Il est relié au dock au Milestone 04 : aujourd'hui, seuls les tests l'utilisent.
+Le moteur (`src/search/`) transforme ce que l'opérateur tape en un passage vérifié. Il ne dépend ni d'OBS ni de Qt. Le dock l'utilise à chaque frappe.
 
 **Pas dans ce milestone :** la recherche par mots-clés (« amour », « berger »), prévue en V1.x avec l'index plein texte.
 

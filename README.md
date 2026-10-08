@@ -2,7 +2,20 @@
 
 Plugin OBS Studio gratuit, édité par **VYRA Concept**, pour afficher la Bible en direct avec une logique de régie : recherche d'un passage, **Preview**, puis **ON AIR**, sans jamais couper l'affichage.
 
-> **État : Milestone 12 sur 14.** Le dock pilote une page overlay transparente (lower third) que l'on ajoute dans OBS comme source Navigateur : ON AIR l'affiche avec un fondu, changer de verset ne la fait pas clignoter, Échap la retire. Testé sous Linux avec un vrai Chromium et de vrais sockets ; **jamais lancé dans OBS ni sous Windows, et pas encore testé en NDI**. Un bouton crée la source OBS à votre place. Sélection rapide : après « Jn 3:16 », taper seulement « 17 » (ou « 17-19 », « 4:1 ») ; sélecteur Livres, Chapitres, Versets à la souris. Trois thèmes (bandeau bas, plein écran, texte seul) et pagination des longs passages (PageUp/PageDown). Historique et favoris (onglets, Ctrl+D). Six raccourcis globaux OBS, à attribuer dans les paramètres d'OBS. Voir [CHANGELOG.md](CHANGELOG.md) et [docs/OVERLAY.md](docs/OVERLAY.md).
+> **État : Milestone 14 sur 14 (version 0.14.0, candidate à validation).** Toutes les fonctions prévues sont écrites et testées sous Linux (tests automatiques, vrai Chromium, vrais sockets) ; le plugin compile avec le vrai OBS 31.1.1 sous Windows et macOS (GitHub CI) et le setup se construit. **Il n'a jamais été lancé dans OBS ni sous Windows, et la transparence NDI n'est pas encore validée** : la liste de contrôle de [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) est à dérouler sur une vraie machine avant tout usage en direct.
+
+## Fonctions
+
+- Recherche rapide (« Jn 3:16 », puis « 17 », « 17-19 », « 4:1 ») et sélecteur Livres / Chapitres / Versets.
+- **Preview** puis **ON AIR** : seul ON AIR change ce qui est à l'antenne ; un échec ne change rien ; Échap retire l'affichage sans perdre le passage.
+- Overlay transparent (source Navigateur, créée par un bouton), fondu sans clignotement, trois thèmes (bandeau bas, plein écran, texte seul), pagination des longs passages.
+- Historique et favoris, six raccourcis globaux OBS.
+- Interface aux couleurs de VYRA Studio, français et anglais.
+
+## Documentation
+
+- [Guide de l'opérateur](docs/GUIDE.md) : utilisation en régie.
+- [Installation](docs/INSTALLATION.md) · [Architecture](docs/ARCHITECTURE.md) · [Overlay](docs/OVERLAY.md) · [Recherche](docs/SEARCH.md) · [Bibles](docs/BIBLES.md) · [Design](docs/DESIGN.md) · [Performances](docs/PERFORMANCE.md) · [Développement](docs/DEVELOPMENT.md) · [Changelog](CHANGELOG.md)
 
 ## Architecture visée
 

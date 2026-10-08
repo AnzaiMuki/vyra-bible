@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.14.0] - 2026-10-09 - Milestone 14 : documentation finale
+
+### Ajouté
+- `docs/GUIDE.md` (guide de l'opérateur) et `docs/ARCHITECTURE.md` (couches, règles de protection de l'antenne, chemin d'un verset, ajout d'une traduction).
+- README réécrit : état réel, fonctions, index de la documentation.
+
+### Non vérifié
+- Inchangé depuis 0.13.0 : aucune exécution dans OBS/Windows, NDI, raccourcis, setup. Le Milestone 13 a été absorbé par le 12.
+
 ## [0.13.0] - 2026-10-09 - Milestone 12 : empaquetage
 
 ### Ajouté
