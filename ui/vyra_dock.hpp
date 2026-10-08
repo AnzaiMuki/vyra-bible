@@ -8,11 +8,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QWidget>
 
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
 
 #include "src/bible/bible_module.hpp"
+#include "src/library/passage_library.hpp"
 #include "src/search/passage_query.hpp"
 #include "src/stage/operator_action.hpp"
 
@@ -24,6 +26,8 @@ class QLineEdit;
 class QPushButton;
 class QLabel;
 class QComboBox;
+class QListWidget;
+class QTabWidget;
 
 namespace vyra::ui {
 
@@ -51,6 +55,7 @@ class PickerPanel;
  *   Ctrl+Enter   passage typed (or the one in PREVIEW if the bar is empty) -> PROGRAM, ON AIR
  *   Up / Down    previous / next verse, in PREVIEW only
  *   PageUp/Down  previous / next PAGE of a long passage on the PROGRAM (the PREVIEW is not touched)
+ *   Ctrl+D       adds / removes the passage in PREVIEW from the favorites
  *   Esc          takes the PROGRAM off the air (the passage stays ready)
  */
 class VyraDock : public QWidget {
@@ -84,6 +89,13 @@ public:
 	 */
 	void perform(stage::OperatorAction action);
 
+	/**
+	 * Where history and favorites are kept. Loads the file now (a missing file is an empty library, damaged
+	 * lines are skipped and mentioned in the status line) and rewrites it after each change.
+	 * Without it the lists still work but are lost when OBS closes.
+	 */
+	void setLibraryFile(const std::filesystem::path &path);
+
 	/** Sets the status line at the bottom of the dock. @p isError shows it in red. */
 	void setStatus(const QString &text, bool isError);
 
@@ -103,6 +115,11 @@ private:
 	void setFieldToPreview();
 	void notifyProgram();
 	void changePage(bool forward);
+	void recordOnAir();
+	void toggleFavorite();
+	void refreshLibrary();
+	void useLibraryItem(const search::Passage &passage, bool onAir);
+	void saveLibrary();
 	void changeTheme(int index);
 
 	const bible::BibleModule *bible_ = nullptr;
@@ -122,6 +139,13 @@ private:
 	QPushButton *nextButton_ = nullptr;
 	QPushButton *hideButton_ = nullptr;
 	QPushButton *onAirButton_ = nullptr;
+	library::PassageLibrary library_;
+	std::filesystem::path libraryPath_;
+	QTabWidget *tabs_ = nullptr;
+	QListWidget *historyList_ = nullptr;
+	QListWidget *favoritesList_ = nullptr;
+	QPushButton *clearHistoryButton_ = nullptr;
+	QPushButton *favoriteButton_ = nullptr;
 	QComboBox *themeBox_ = nullptr;
 	QPushButton *pagePreviousButton_ = nullptr;
 	QPushButton *pageNextButton_ = nullptr;

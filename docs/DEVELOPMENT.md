@@ -94,3 +94,7 @@ Le code se compile contre les en-têtes réels d'OBS et de Qt6, ce qui détecte 
 26. Attribuer une touche à « Mettre à l'antenne », mettre le focus sur une autre fenêtre (ou une autre partie d'OBS) : la touche met le passage du Preview à l'antenne.
 27. Attribuer verset suivant/précédent, page suivante/précédente, Masquer : chacune agit comme le bouton correspondant du dock, et le verset à l'antenne ne change qu'avec ON AIR.
 28. Fermer puis rouvrir OBS : les touches choisies sont toujours là. Noter tout conflit avec d'autres touches OBS.
+29. Mettre `Jn 3:16` puis `Ps 23` à l'antenne : onglet Historique, « Psaumes 23 » au-dessus de « Jean 3:16 ». Un simple Preview n'ajoute rien.
+30. Mettre un passage en Preview, cliquer « ☆ Favori » (ou Ctrl+D) : l'étoile se remplit, l'onglet Favoris le liste. Clic = Preview, double-clic = ON AIR.
+31. Fermer et rouvrir OBS : historique et favoris sont toujours là. Le fichier est `library.txt` dans le dossier de configuration du plugin (ouvrir via %APPDATA%\obs-studio\plugin_config\vyra-bible\ ; à confirmer).
+32. Lire les onglets sur le thème sombre ET le thème clair d'OBS : texte lisible, élément sélectionné visible.

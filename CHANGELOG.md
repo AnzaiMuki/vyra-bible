@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0] - 2026-10-08 - Milestone 09 : historique et favoris
+
+### Ajouté
+- **Historique** : chaque passage mis à l'antenne (ON AIR, double-clic, Ctrl+clic) est mémorisé, le plus récent en haut, sans doublon, 50 au maximum. Prévisualiser n'ajoute rien.
+- **Favoris** : bouton « ☆ Favori » ou Ctrl+D ajoute / retire le passage du Preview (200 au maximum, message clair quand la liste est pleine).
+- Deux onglets à côté du sélecteur : Historique et Favoris. Clic = Preview, double-clic = ON AIR. Bouton « Effacer l'historique » (les favoris restent).
+- Sauvegarde dans le dossier de configuration d'OBS du plugin (`library.txt`, texte simple), réécrite à chaque changement, par fichier temporaire puis renommage : un plantage ne laisse jamais un demi-fichier. Les lignes illisibles ou qui ne correspondent plus à la Bible chargée sont ignorées et signalées en rouge.
+- Code Qt-free dans `src/library/passage_library.*`.
+
+### Corrigé
+- Défaut trouvé par les tests (AddressSanitizer) avant publication : vider une liste pendant son propre signal de clic provoquait un accès à de la mémoire libérée. Les clics de listes sont maintenant traités après le retour du signal.
+
+### Vérifié (Linux, sans OBS)
+- `library_test` (277 vérifications) : ordre, doublons, plafonds, validité contre la Bible, aller-retour du fichier, fichiers abîmés ou étrangers, dossier non inscriptible, remplacement atomique ; deux altérations volontaires (doublons d'historique tolérés, validation retirée) sont détectées.
+- `dock_ui_test` (146) : l'historique ne retient que l'antenne, favoris sans effet sur l'antenne, clic/double-clic, persistance entre deux docks, fichier abîmé, chemin impossible, plafond des favoris.
+
+### Non vérifié
+- L'emplacement réel du fichier (`obs_module_config_path` sous Windows), jamais exécuté. Le rendu des onglets sur le thème sombre d'OBS n'a pas été examiné.
+- Un double-clic réel à la souris (les tests simulent clic puis double-clic).
+
 ## [0.8.0] - 2026-10-08 - Milestone 08 : raccourcis clavier OBS
 
 ### Ajouté

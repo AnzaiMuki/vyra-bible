@@ -39,6 +39,12 @@ struct Passage {
 	int endVerse = 0;
 };
 
+inline bool operator==(const Passage &a, const Passage &b)
+{
+	return a.book == b.book && a.startChapter == b.startChapter && a.startVerse == b.startVerse &&
+	       a.endChapter == b.endChapter && a.endVerse == b.endVerse;
+}
+
 enum class QueryStatus {
 	Ok,
 	Empty,             // nothing typed

@@ -15,6 +15,10 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <QHBoxLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QListWidget>
+#include <QMetaObject>
+#include <QTabBar>
+#include <QTabWidget>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QPushButton>
@@ -60,6 +64,9 @@ constexpr const char *kStyleSheet = R"(
 #onAirButton:enabled {
 	background-color: #d92d20;
 	color: #ffffff;
+}
+#favoriteButton[favorite="true"] {
+	color: #e0a800;
 }
 #pickerPanel QPushButton {
 	color: palette(text);
@@ -153,6 +160,15 @@ QString describeQuery(const search::QueryResult &r, const bible::BibleModule &bi
 	return {};
 }
 
+/** The passage stored in a list item (see refreshLibrary). */
+search::Passage passageOf(const QListWidgetItem *item)
+{
+	const QVariantList v = item->data(Qt::UserRole).toList();
+	if (v.size() != 5)
+		return {};
+	return {v[0].toInt(), v[1].toInt(), v[2].toInt(), v[3].toInt(), v[4].toInt()};
+}
+
 /** A slide as Qt rich text. Everything that comes from the Bible is escaped. */
 QString slideHtml(const stage::Slide &slide)
 {
@@ -225,6 +241,11 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	buttons->addWidget(previousButton_);
 	buttons->addWidget(nextButton_);
 	buttons->addWidget(hideButton_);
+	favoriteButton_ = new QPushButton(text("Button.Favorite"), this);
+	favoriteButton_->setObjectName(QStringLiteral("favoriteButton"));
+	favoriteButton_->setToolTip(text("Tooltip.Favorite"));
+	favoriteButton_->setFocusPolicy(Qt::NoFocus);
+	buttons->addWidget(favoriteButton_);
 	buttons->addStretch(1);
 	buttons->addWidget(onAirButton_);
 	root->addLayout(buttons);
@@ -256,7 +277,32 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 
 	picker_ = new PickerPanel(bible_, this);
 	picker_->setMinimumHeight(110);
-	root->addWidget(picker_, 1);
+
+	// Quick access: the picker, what already went on the air, and the passages kept as favorites.
+	tabs_ = new QTabWidget(this);
+	tabs_->setObjectName(QStringLiteral("quickTabs"));
+	tabs_->tabBar()->setFocusPolicy(Qt::NoFocus);
+	tabs_->setFocusPolicy(Qt::NoFocus);
+	auto makeList = [this](const char *name) {
+		auto *list = new QListWidget(this);
+		list->setObjectName(QString::fromUtf8(name));
+		list->setFocusPolicy(Qt::NoFocus); // clicking must not take the keyboard away from the search bar
+		return list;
+	};
+	historyList_ = makeList("historyList");
+	favoritesList_ = makeList("favoritesList");
+	clearHistoryButton_ = new QPushButton(text("Button.ClearHistory"), this);
+	clearHistoryButton_->setFocusPolicy(Qt::NoFocus);
+	auto *historyPage = new QWidget(this);
+	auto *historyLayout = new QVBoxLayout(historyPage);
+	historyLayout->setContentsMargins(0, 4, 0, 0);
+	historyLayout->addWidget(historyList_, 1);
+	historyLayout->addWidget(clearHistoryButton_, 0, Qt::AlignRight);
+	tabs_->addTab(picker_, text("Tab.Picker"));
+	tabs_->addTab(historyPage, text("Tab.History"));
+	tabs_->addTab(favoritesList_, text("Tab.Favorites"));
+	tabs_->setMinimumHeight(130);
+	root->addWidget(tabs_, 1);
 
 	addSourceButton_ = new QPushButton(text("Button.AddSource"), this);
 	addSourceButton_->setObjectName(QStringLiteral("addSourceButton"));
@@ -298,12 +344,31 @@ VyraDock::VyraDock(const bible::BibleModule *bible, QWidget *parent) : QWidget(p
 	connect(nextButton_, &QPushButton::clicked, this, [this] { navigate(true); });
 	connect(hideButton_, &QPushButton::clicked, this, [this] { hideProgram(); });
 	connect(onAirButton_, &QPushButton::clicked, this, [this] { airFromField(); });
+	connect(favoriteButton_, &QPushButton::clicked, this, [this] { toggleFavorite(); });
+	connect(clearHistoryButton_, &QPushButton::clicked, this, [this] {
+		library_.clearHistory();
+		saveLibrary();
+		refreshLibrary();
+	});
+	for (QListWidget *list : {historyList_, favoritesList_}) {
+		// Queued on purpose: using an item rebuilds the lists, and a list must never be emptied from inside
+		// its own click signal (the view would still touch the item it just lost).
+		connect(list, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
+			const search::Passage passage = passageOf(item);
+			QMetaObject::invokeMethod(this, [this, passage] { useLibraryItem(passage, false); }, Qt::QueuedConnection);
+		});
+		connect(list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item) {
+			const search::Passage passage = passageOf(item);
+			QMetaObject::invokeMethod(this, [this, passage] { useLibraryItem(passage, true); }, Qt::QueuedConnection);
+		});
+	}
 	connect(pagePreviousButton_, &QPushButton::clicked, this, [this] { changePage(false); });
 	connect(pageNextButton_, &QPushButton::clicked, this, [this] { changePage(true); });
 	connect(themeBox_, QOverload<int>::of(&QComboBox::activated), this, [this](int i) { changeTheme(i); });
 
 	searchEdit_->setEnabled(stage_ != nullptr);
 	refresh();
+	refreshLibrary();
 	obs_log(LOG_DEBUG, "dock widgets created");
 }
 
@@ -362,6 +427,7 @@ void VyraDock::airFromField()
 		setStatus(text("Status.OnAir").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
 		setFieldToPreview();
 		refresh(true);
+		recordOnAir();
 		notifyProgram();
 	}
 }
@@ -375,6 +441,85 @@ void VyraDock::navigate(bool forward)
 		setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
 		refresh(true);
 	}
+}
+
+void VyraDock::setLibraryFile(const std::filesystem::path &path)
+{
+	libraryPath_ = path;
+	if (!bible_)
+		return;
+	const library::LoadReport report = library_.loadFromFile(path, *bible_);
+	refreshLibrary();
+	refresh();
+	if (report.skippedLines > 0)
+		setStatus(text("Status.LibrarySkipped").arg(static_cast<qulonglong>(report.skippedLines)), true);
+}
+
+void VyraDock::saveLibrary()
+{
+	if (libraryPath_.empty())
+		return;
+	if (!library_.saveToFile(libraryPath_))
+		setStatus(text("Error.LibrarySave"), true);
+}
+
+void VyraDock::recordOnAir()
+{
+	if (!stage_ || !stage_->program())
+		return;
+	library_.addToHistory(*stage_->program());
+	saveLibrary();
+	refreshLibrary();
+}
+
+void VyraDock::toggleFavorite()
+{
+	if (!stage_ || !stage_->preview())
+		return;
+	const search::Passage passage = *stage_->preview();
+	const bool wasFavorite = library_.isFavorite(passage);
+	const bool nowFavorite = library_.toggleFavorite(passage);
+	if (!wasFavorite && !nowFavorite) {
+		setStatus(text("Error.FavoritesFull").arg(static_cast<qulonglong>(library::PassageLibrary::kMaxFavorites)), true);
+		return;
+	}
+	saveLibrary();
+	refreshLibrary();
+	refresh();
+}
+
+void VyraDock::refreshLibrary()
+{
+	if (!bible_)
+		return;
+	auto fill = [this](QListWidget *list, const std::vector<search::Passage> &passages) {
+		list->clear();
+		for (const search::Passage &p : passages) {
+			auto *item = new QListWidgetItem(fromStd(search::formatPassage(p, *bible_)));
+			item->setData(Qt::UserRole, QVariantList{p.book, p.startChapter, p.startVerse, p.endChapter, p.endVerse});
+			list->addItem(item);
+		}
+	};
+	fill(historyList_, library_.history());
+	fill(favoritesList_, library_.favorites());
+	clearHistoryButton_->setEnabled(!library_.history().empty());
+}
+
+/** A click on history or favorites: the passage goes to the PREVIEW; a double-click puts it on the air. */
+void VyraDock::useLibraryItem(const search::Passage &passage, bool onAir)
+{
+	if (!stage_ || !library::isValidPassage(passage, *bible_) || !stage_->showInPreview(passage))
+		return;
+	setFieldToPreview();
+	if (onAir && stage_->takeOnAir()) {
+		setStatus(text("Status.OnAir").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
+		refresh(true);
+		recordOnAir();
+		notifyProgram();
+		return;
+	}
+	setStatus(text("Status.Previewed").arg(fromStd(search::formatPassage(*stage_->preview(), *bible_))), false);
+	refresh(true);
 }
 
 void VyraDock::perform(stage::OperatorAction action)
@@ -482,6 +627,7 @@ void VyraDock::pickVerse(int book, int chapter, int verse, bool extend, bool onA
 	if (onAir && stage_->takeOnAir()) {
 		setStatus(text("Status.OnAir").arg(fromStd(search::formatPassage(*stage_->program(), *bible_))), false);
 		refresh(true);
+		recordOnAir();
 		notifyProgram();
 		return;
 	}
@@ -522,6 +668,11 @@ void VyraDock::refresh(bool follow)
 	hideButton_->setEnabled(have && stage_->programLive());
 	onAirButton_->setEnabled(have && stage_->preview().has_value());
 	themeBox_->setEnabled(have);
+	const bool previewed = have && stage_->preview().has_value();
+	const bool fav = previewed && library_.isFavorite(*stage_->preview());
+	favoriteButton_->setEnabled(previewed);
+	favoriteButton_->setText(text(fav ? "Button.Favorite.On" : "Button.Favorite"));
+	favoriteButton_->setProperty("favorite", fav);
 
 	const std::size_t pages = have ? stage_->programPages().size() : 0;
 	const std::size_t page = have ? stage_->programPage() : 0;
@@ -554,6 +705,12 @@ bool VyraDock::eventFilter(QObject *watched, QEvent *event)
 	case Qt::Key_Down:
 		if (plain && stage_->preview()) {
 			navigate(key->key() == Qt::Key_Down);
+			return true;
+		}
+		break;
+	case Qt::Key_D:
+		if (ctrl && stage_->preview()) {
+			toggleFavorite();
 			return true;
 		}
 		break;

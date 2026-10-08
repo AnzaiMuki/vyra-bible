@@ -41,6 +41,8 @@ target_sources(
   PRIVATE
     src/bible/bible_module.cpp
     src/bible/bible_module.hpp
+    src/library/passage_library.cpp
+    src/library/passage_library.hpp
     src/obs/hotkeys.cpp
     src/obs/hotkeys.hpp
     src/obs/obs_source_setup.cpp

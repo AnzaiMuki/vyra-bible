@@ -125,6 +125,7 @@ if(Qt6_FOUND)
     "${VYRA_ROOT}/src/search/passage_query.cpp"
     "${VYRA_ROOT}/src/stage/stage_controller.cpp"
     "${VYRA_ROOT}/src/stage/paginator.cpp"
+    "${VYRA_ROOT}/src/library/passage_library.cpp"
   )
   # ui/vyra_dock.cpp includes <obs-module.h> and <plugin-support.h>: only the stubs of tests/stubs are used.
   target_include_directories(dock_ui_test PRIVATE "${VYRA_ROOT}" "${CMAKE_CURRENT_SOURCE_DIR}/stubs")
@@ -213,3 +214,21 @@ if(Python3_FOUND)
     endif()
   endif()
 endif()
+
+add_executable(
+  library_test
+  library_test.cpp
+  "${VYRA_ROOT}/src/bible/bible_module.cpp"
+  "${VYRA_ROOT}/src/search/book_catalog.cpp"
+  "${VYRA_ROOT}/src/search/passage_query.cpp"
+  "${VYRA_ROOT}/src/library/passage_library.cpp"
+)
+target_include_directories(library_test PRIVATE "${VYRA_ROOT}")
+target_compile_definitions(library_test PRIVATE VYRA_LSG_PATH="${VYRA_ROOT}/data/bibles/lsg1910.tsv")
+if(MSVC)
+  target_compile_options(library_test PRIVATE /W4 /utf-8)
+else()
+  target_compile_options(library_test PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_test(NAME library COMMAND library_test)

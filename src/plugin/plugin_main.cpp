@@ -161,6 +161,15 @@ bool obs_module_load(void)
 	auto *dock = new vyra::ui::VyraDock(g_bible.get(), mainWindow);
 	dock->setStatus(bibleStatus + QLatin1Char('\n') + overlayStatus, !bibleOk || !overlayOk);
 
+	if (g_bible) {
+		// History and favorites live in the OBS config folder of the plugin, next to the other plugin settings.
+		char *rawLibrary = obs_module_config_path("library.txt");
+		if (rawLibrary) {
+			dock->setLibraryFile(std::filesystem::u8path(rawLibrary));
+			bfree(rawLibrary);
+		}
+	}
+
 	if (g_overlay) {
 		QPointer<vyra::overlay::OverlayServer> portSource(g_overlay.get());
 		dock->setAddSourceHandler([portSource]() -> QString {

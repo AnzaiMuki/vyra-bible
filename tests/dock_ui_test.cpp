@@ -12,6 +12,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <QApplication>
 #include <QFile>
 #include <QComboBox>
+#include <QListWidget>
+#include <QTabWidget>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMap>
@@ -20,6 +22,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 #include <QTextStream>
 #include <QtTest/QtTest>
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include "src/bible/bible_module.hpp"
 #include "src/search/passage_query.hpp"
@@ -206,6 +210,76 @@ int main(int c,char**v){QApplication app(c,v);
   d.perform(A::PreviewNext); CHECK(ref.find("3:15")!=std::string::npos && heard==h0+1);          // stepping never touches the air
   d.perform(A::Hide); CHECK(!live && heard==h0+2);
   d.perform(A::Hide); CHECK(heard==h0+2);                                                       // already hidden
+ }
+ { // history and favorites: recorded on ON AIR only, usable by click, kept on disk
+  namespace fs=std::filesystem;
+  const fs::path dir=fs::temp_directory_path()/"vyra_dock_lib_test"; fs::remove_all(dir);
+  const fs::path file=dir/"library.txt";
+  auto items=[](QListWidget*l){ QStringList r; for(int i=0;i<l->count();++i) r<<l->item(i)->text(); return r; };
+  {
+   vyra::ui::VyraDock d(&bible); d.setLibraryFile(file); d.show(); app.processEvents();
+   int heard=0; bool live=false; std::string ref;
+   d.setProgramListener([&](const vyra::stage::StageController&s){ ++heard; live=s.programLive(); ref=s.program()?vyra::search::formatPassage(*s.program(),bible):""; });
+   auto*edit=d.findChild<QLineEdit*>(); auto*hist=d.findChild<QListWidget*>("historyList"); auto*fav=d.findChild<QListWidget*>("favoritesList");
+   auto*favBtn=d.findChild<QPushButton*>("favoriteButton"); auto*tabs=d.findChild<QTabWidget*>("quickTabs");
+   CHECK(hist && fav && favBtn && tabs && tabs->count()==3 && hist->count()==0 && !favBtn->isEnabled());
+   QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return);
+   CHECK(hist->count()==0 && favBtn->isEnabled());                          // previewing is not airing: no history
+   QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
+   CHECK(items(hist)==QStringList{"Jean 3:16"});
+   QTest::keyClicks(edit,"Ps 23"); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
+   QTest::keyClicks(edit,"Rm 8:28"); QTest::keyClick(edit,Qt::Key_Return);   // previewed only
+   CHECK(items(hist)==QStringList({"Psaumes 23","Jean 3:16"}));
+   // favorites: button and Ctrl+D act on the PREVIEW
+   CHECK(favBtn->text().startsWith(QString::fromUtf8("\xE2\x98\x86")));
+   QTest::mouseClick(favBtn,Qt::LeftButton); CHECK(items(fav)==QStringList{"Romains 8:28"} && favBtn->text().startsWith(QString::fromUtf8("\xE2\x98\x85")));
+   CHECK(favBtn->property("favorite").toBool());
+   QTest::keyClick(edit,Qt::Key_D,Qt::ControlModifier); CHECK(fav->count()==0 && !favBtn->property("favorite").toBool());
+   QTest::keyClick(edit,Qt::Key_D,Qt::ControlModifier); CHECK(fav->count()==1);
+   CHECK(heard>=2 && ref=="Psaumes 23");                                    // favorites never touch the air
+   const int h=heard;
+   // click = preview, double-click = on air (and goes to the top of the history); the operator opens the tab first
+   tabs->setCurrentIndex(1); app.processEvents();
+   QTest::mouseClick(hist->viewport(),Qt::LeftButton,Qt::NoModifier,hist->visualItemRect(hist->item(1)).center()); app.processEvents();
+   CHECK(contents(d)[0]->text().contains("Jean 3:16") && heard==h && ref=="Psaumes 23");
+   QTest::mouseDClick(hist->viewport(),Qt::LeftButton,Qt::NoModifier,hist->visualItemRect(hist->item(1)).center()); app.processEvents();
+   CHECK(heard==h+1 && ref=="Jean 3:16" && live && items(hist)==QStringList({"Jean 3:16","Psaumes 23"}));
+   tabs->setCurrentIndex(2); QTest::qWait(QApplication::doubleClickInterval()+50); // else Qt may read the click as part of the previous double-click
+   QTest::mouseClick(fav->viewport(),Qt::LeftButton,Qt::NoModifier,fav->visualItemRect(fav->item(0)).center()); app.processEvents();
+   CHECK(contents(d)[0]->text().contains("Romains 8:28") && ref=="Jean 3:16");   // one click: preview only
+   QTest::mouseDClick(fav->viewport(),Qt::LeftButton,Qt::NoModifier,fav->visualItemRect(fav->item(0)).center()); app.processEvents();
+   CHECK(ref=="Romains 8:28" && items(hist)[0]=="Romains 8:28" && edit->text()=="Romains 8:28");
+   if(out) { tabs->setCurrentIndex(1); app.processEvents(); d.grab().save(QString("%1/m09_history.png").arg(out)); }
+  }
+  { // a new dock (OBS restarted) finds everything again
+   vyra::ui::VyraDock d(&bible); d.setLibraryFile(file); d.show(); app.processEvents();
+   auto*hist=d.findChild<QListWidget*>("historyList"); auto*fav=d.findChild<QListWidget*>("favoritesList");
+   CHECK(items(hist)==QStringList({"Romains 8:28","Jean 3:16","Psaumes 23"}) && items(fav)==QStringList{"Romains 8:28"});
+   for(auto*b:d.findChildren<QPushButton*>()) if(b->text()=="Effacer l'historique"){ QTest::mouseClick(b,Qt::LeftButton); CHECK(hist->count()==0 && !b->isEnabled()); }
+   CHECK(fav->count()==1);                                                  // clearing the history keeps the favorites
+  }
+  { vyra::ui::VyraDock d(&bible); d.setLibraryFile(file); d.show(); app.processEvents();
+    CHECK(d.findChild<QListWidget*>("historyList")->count()==0 && d.findChild<QListWidget*>("favoritesList")->count()==1); }
+  { // a damaged file: what is readable is kept, the rest is reported in red, nothing crashes
+    { std::ofstream o(file,std::ios::binary|std::ios::trunc); o<<"VYRA-LIBRARY 1\nF 43 3 16 3 16\nF garbage\nH 43 3 16 3 99\n"; }
+    vyra::ui::VyraDock d(&bible); d.setLibraryFile(file); d.show(); app.processEvents();
+    CHECK(d.findChild<QListWidget*>("favoritesList")->count()==1 && d.findChild<QListWidget*>("historyList")->count()==0);
+    CHECK(status(d).contains("2") && d.findChild<QLabel*>("dockStatus")->property("error").toBool());
+  }
+  { // a library path that cannot be written: the dock keeps working and says so
+    vyra::ui::VyraDock d(&bible); d.setLibraryFile(file/"impossible"/"x.txt"); d.show(); app.processEvents();
+    auto*edit=d.findChild<QLineEdit*>(); QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return,Qt::ControlModifier);
+    CHECK(d.findChild<QListWidget*>("historyList")->count()==1 && status(d).contains("Impossible d'enregistrer"));
+  }
+  { // favorites cap
+    vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();
+    auto*edit=d.findChild<QLineEdit*>(); auto*favBtn=d.findChild<QPushButton*>("favoriteButton");
+    for(int c=1;c<=100;++c) for(int v=1;v<=2;++v){ edit->selectAll(); QTest::keyClicks(edit,QString("Ps %1:%2").arg(c).arg(v)); QTest::keyClick(edit,Qt::Key_Return); QTest::mouseClick(favBtn,Qt::LeftButton); }
+    CHECK(d.findChild<QListWidget*>("favoritesList")->count()==200);
+    edit->selectAll(); QTest::keyClicks(edit,"Jn 3:16"); QTest::keyClick(edit,Qt::Key_Return); QTest::mouseClick(favBtn,Qt::LeftButton);
+    CHECK(d.findChild<QListWidget*>("favoritesList")->count()==200 && status(d).contains("200"));
+  }
+  fs::remove_all(dir);
  }
  { // the "add the source to OBS" button exists only when something can do it, and shows what happened
   vyra::ui::VyraDock d(&bible); d.show(); app.processEvents();
